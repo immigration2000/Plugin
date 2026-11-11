@@ -1,0 +1,172 @@
+
+==================== inputs/04_order.txt ====================
+ENUM EItemCategory scoped=1 underlying='uint8' macro=1 spec='BlueprintType' comment=''
+   - Weapon value='' umeta='' display='' hidden=0 comment=''
+   - Armor value='' umeta='' display='' hidden=0 comment=''
+   - Consumable value='' umeta='' display='' hidden=0 comment=''
+STRUCT FInventory parent='' parentText='' macro=1 spec='BlueprintType' comment=''
+   - Slots : TArray<FInventorySlot> (text='TArray<FInventorySlot>') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='' default='' dim='' bits=0 comment=''
+   - Selected : FItemInfo (text='FItemInfo') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='' default='' dim='' bits=0 comment=''
+STRUCT FInventorySlot parent='' parentText='' macro=1 spec='BlueprintType' comment=''
+   - Item : FItemInfo (text='FItemInfo') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='' default='' dim='' bits=0 comment=''
+   - Quantity : int32 (text='int32') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='= 1' default='1' dim='' bits=0 comment=''
+STRUCT FItemInfo parent='' parentText='' macro=1 spec='BlueprintType' comment=''
+   - Id : FName (text='FName') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='' default='' dim='' bits=0 comment=''
+   - Category : EItemCategory (text='EItemCategory') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='' default='' dim='' bits=0 comment=''
+---- single file: InventoryTypes.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "InventoryTypes.generated.h"
+
+UENUM(BlueprintType)
+enum class EItemCategory : uint8
+{
+	Weapon,
+	Armor,
+	Consumable,
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FItemInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemCategory Category = EItemCategory::Weapon;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FInventorySlot
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Item;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Quantity = 1;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FInventory
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FInventorySlot> Slots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Selected;
+};
+
+==================== PER-TYPE (inputs/04_order.txt) ====================
+---- ItemCategory.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "ItemCategory.generated.h"
+
+UENUM(BlueprintType)
+enum class EItemCategory : uint8
+{
+	Weapon,
+	Armor,
+	Consumable,
+};
+---- ItemInfo.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "ItemCategory.h"
+#include "ItemInfo.generated.h"
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FItemInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemCategory Category = EItemCategory::Weapon;
+};
+---- InventorySlot.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "ItemInfo.h"
+#include "InventorySlot.generated.h"
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FInventorySlot
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Item;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Quantity = 1;
+};
+---- Inventory.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "InventorySlot.h"
+#include "ItemInfo.h"
+#include "Inventory.generated.h"
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FInventory
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FInventorySlot> Slots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Selected;
+};
+
+==================== DEFAULT VALUES ====================
+  10.f -> 10.0
+  -.5f -> -0.5
+  3. -> 3.0
+  1.5e-3f -> 1.5e-3
+  100 -> 100
+  UE_PI -> (skip)
+  0x1F -> 31
+  -42 -> -42
+  1'000'000 -> 1000000
+  5000000000LL -> 5000000000
+  300 -> (skip)
+  255u -> 255
+  true -> true
+  1 -> true
+  TEXT("Hello \"World\"") -> Hello "World"
+  NAME_None -> (skip)
+  FName(TEXT("Socket_R")) -> Socket_R
+  NSLOCTEXT("Ns", "Key", "검") -> 검
+  FText::GetEmpty() -> (skip)
+  TEXT("") -> (skip)
+
+==================== NAMING ====================
+  EWeaponType : keep=EWeaponType ES=E_WeaponType EF=E_WeaponType none=WeaponType
+  FWeaponData : keep=FWeaponData ES=S_WeaponData EF=F_WeaponData none=WeaponData
+  WeaponType : keep=WeaponType ES=S_WeaponType EF=F_WeaponType none=WeaponType
+  Foo : keep=Foo ES=S_Foo EF=F_Foo none=Foo

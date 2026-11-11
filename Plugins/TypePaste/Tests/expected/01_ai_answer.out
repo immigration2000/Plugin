@@ -1,0 +1,279 @@
+
+==================== inputs/01_ai_answer.txt ====================
+ENUM EWeaponType scoped=1 underlying='uint8' macro=1 spec='BlueprintType' comment='무기의 대분류'
+   - None value='' umeta='DisplayName = "없음"' display='없음' hidden=0 comment=''
+   - Melee value='' umeta='DisplayName = "근접"' display='근접' hidden=0 comment='칼, 둔기'
+   - Ranged value='' umeta='DisplayName = "원거리"' display='원거리' hidden=0 comment='활, 총'
+   - Magic value='' umeta='DisplayName = "마법", ToolTip = "마나를 소모"' display='마법' hidden=0 comment='마법 무기'
+   - MAX value='' umeta='Hidden' display='' hidden=1 comment=''
+ENUM EItemRarity scoped=1 underlying='uint8' macro=1 spec='BlueprintType' comment=''
+   - Common value='0' umeta='' display='' hidden=0 comment=''
+   - Rare value='1' umeta='' display='' hidden=0 comment=''
+   - Epic value='' umeta='' display='' hidden=0 comment=''
+   - Legendary value='' umeta='' display='' hidden=0 comment=''
+STRUCT FWeaponStats parent='' parentText='' macro=1 spec='BlueprintType' comment='무기 한 개의 데이터'
+   - Damage : float (text='float') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='= 10.f' default='10.f' dim='' bits=0 comment='기본 공격력'
+   - AttackSpeed : float (text='float') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (ClampMin = "0.1")' init='= 1.0f' default='1.0f' dim='' bits=0 comment='초당 공격 횟수'
+   - MaxDurability : int32 (text='int32') uprop=1 spec='EditAnywhere, BlueprintReadWrite' init='= 100' default='100' dim='' bits=0 comment=''
+STRUCT FWeaponData parent='FTableRowBase' parentText='public FTableRowBase' macro=1 spec='BlueprintType' comment=''
+   - WeaponId : FName (text='FName') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='= NAME_None' default='NAME_None' dim='' bits=0 comment=''
+   - DisplayName : FText (text='FText') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='' default='' dim='' bits=0 comment=''
+   - WeaponType : EWeaponType (text='EWeaponType') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='= EWeaponType::Melee' default='EWeaponType::Melee' dim='' bits=0 comment=''
+   - Rarity : TEnumAsByte<EItemRarity> (text='TEnumAsByte<EItemRarity>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='' default='' dim='' bits=0 comment=''
+   - Stats : FWeaponStats (text='FWeaponStats') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Weapon"' init='' default='' dim='' bits=0 comment=''
+   - Mesh : TSoftObjectPtr<UStaticMesh> (text='TSoftObjectPtr<UStaticMesh>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Visual"' init='' default='' dim='' bits=0 comment=''
+   - Icon : TObjectPtr<UTexture2D> (text='TObjectPtr<UTexture2D>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Visual"' init='' default='' dim='' bits=0 comment=''
+   - ProjectileClass : TSubclassOf<AActor> (text='TSubclassOf<AActor>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Gameplay"' init='' default='' dim='' bits=0 comment=''
+   - Tags : TArray<FGameplayTag> (text='TArray<FGameplayTag>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Gameplay"' init='' default='' dim='' bits=0 comment=''
+   - BonusStats : TMap<FName, float> (text='TMap<FName, float>') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Gameplay"' init='' default='' dim='' bits=0 comment=''
+   - bIsTwoHanded : bool (text='bool') uprop=1 spec='EditAnywhere, BlueprintReadWrite, Category = "Gameplay"' init='= false' default='false' dim='' bits=0 comment=''
+---- single file: WeaponStatsTypes.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/SoftObjectPtr.h"
+#include "UObject/ObjectPtr.h"
+#include "Templates/SubclassOf.h"
+#include "GameplayTagContainer.h"
+#include "Engine/DataTable.h"
+#include "WeaponStatsTypes.generated.h"
+
+class UStaticMesh;
+class UTexture2D;
+class AActor;
+
+/** 무기의 대분류 */
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	None UMETA(DisplayName = "없음"),
+	/** 칼, 둔기 */
+	Melee UMETA(DisplayName = "근접"),
+	/** 활, 총 */
+	Ranged UMETA(DisplayName = "원거리"),
+	/** 마법 무기 */
+	Magic UMETA(DisplayName = "마법", ToolTip = "마나를 소모"),
+	MAX UMETA(Hidden),
+};
+
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+	Common = 0,
+	Rare = 1,
+	Epic,
+	Legendary,
+};
+
+/** 무기 한 개의 데이터 */
+USTRUCT(BlueprintType)
+struct MYGAME_API FWeaponStats
+{
+	GENERATED_BODY()
+
+	/** 기본 공격력 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	float Damage = 10.f;
+
+	/** 초당 공격 횟수 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (ClampMin = "0.1"))
+	float AttackSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxDurability = 100;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName WeaponId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	EWeaponType WeaponType = EWeaponType::Melee;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	EItemRarity Rarity = EItemRarity::Common;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FWeaponStats Stats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TArray<FGameplayTag> Tags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TMap<FName, float> BonusStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	bool bIsTwoHanded = false;
+};
+  INFO  구조체 'FWeaponData' 의 TEnumAsByte<열거형> 을 열거형 타입으로 바꿨습니다. (enum class 에는 TEnumAsByte 가 필요 없음)
+  WARN  모듈의 Build.cs 에 다음 의존 모듈이 필요할 수 있습니다: GameplayTags
+
+==================== PER-TYPE (inputs/01_ai_answer.txt) ====================
+---- WeaponType.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "WeaponType.generated.h"
+
+/** 무기의 대분류 */
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	None UMETA(DisplayName = "없음"),
+	/** 칼, 둔기 */
+	Melee UMETA(DisplayName = "근접"),
+	/** 활, 총 */
+	Ranged UMETA(DisplayName = "원거리"),
+	/** 마법 무기 */
+	Magic UMETA(DisplayName = "마법", ToolTip = "마나를 소모"),
+	MAX UMETA(Hidden),
+};
+---- ItemRarity.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "ItemRarity.generated.h"
+
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+	Common = 0,
+	Rare = 1,
+	Epic,
+	Legendary,
+};
+---- WeaponStats.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "WeaponStats.generated.h"
+
+/** 무기 한 개의 데이터 */
+USTRUCT(BlueprintType)
+struct MYGAME_API FWeaponStats
+{
+	GENERATED_BODY()
+
+	/** 기본 공격력 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	float Damage = 10.f;
+
+	/** 초당 공격 횟수 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (ClampMin = "0.1"))
+	float AttackSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxDurability = 100;
+};
+---- WeaponData.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/SoftObjectPtr.h"
+#include "UObject/ObjectPtr.h"
+#include "Templates/SubclassOf.h"
+#include "WeaponType.h"
+#include "ItemRarity.h"
+#include "WeaponStats.h"
+#include "GameplayTagContainer.h"
+#include "Engine/DataTable.h"
+#include "WeaponData.generated.h"
+
+class UStaticMesh;
+class UTexture2D;
+class AActor;
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName WeaponId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	EWeaponType WeaponType = EWeaponType::Melee;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	EItemRarity Rarity = EItemRarity::Common;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FWeaponStats Stats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TArray<FGameplayTag> Tags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TMap<FName, float> BonusStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	bool bIsTwoHanded = false;
+};
+  INFO  구조체 'FWeaponData' 의 TEnumAsByte<열거형> 을 열거형 타입으로 바꿨습니다. (enum class 에는 TEnumAsByte 가 필요 없음)
+  WARN  모듈의 Build.cs 에 다음 의존 모듈이 필요할 수 있습니다: GameplayTags
+
+==================== DEFAULT VALUES ====================
+  10.f -> 10.0
+  -.5f -> -0.5
+  3. -> 3.0
+  1.5e-3f -> 1.5e-3
+  100 -> 100
+  UE_PI -> (skip)
+  0x1F -> 31
+  -42 -> -42
+  1'000'000 -> 1000000
+  5000000000LL -> 5000000000
+  300 -> (skip)
+  255u -> 255
+  true -> true
+  1 -> true
+  TEXT("Hello \"World\"") -> Hello "World"
+  NAME_None -> (skip)
+  FName(TEXT("Socket_R")) -> Socket_R
+  NSLOCTEXT("Ns", "Key", "검") -> 검
+  FText::GetEmpty() -> (skip)
+  TEXT("") -> (skip)
+
+==================== NAMING ====================
+  EWeaponType : keep=EWeaponType ES=E_WeaponType EF=E_WeaponType none=WeaponType
+  FWeaponData : keep=FWeaponData ES=S_WeaponData EF=F_WeaponData none=WeaponData
+  WeaponType : keep=WeaponType ES=S_WeaponType EF=F_WeaponType none=WeaponType
+  Foo : keep=Foo ES=S_Foo EF=F_Foo none=Foo

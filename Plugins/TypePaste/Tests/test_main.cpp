@@ -5,6 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 static std::string U8(const FString& In)
 {
@@ -97,6 +101,10 @@ static std::string ReadFile(const char* Path)
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+	// Windows 텍스트 모드는 \n 을 \r\n 으로 바꿔 골든 비교가 깨지므로 바이트 그대로 출력
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
 	for (int i = 1; i < argc; ++i)
 	{
 		Dump(argv[i], FromU8(ReadFile(argv[i])));

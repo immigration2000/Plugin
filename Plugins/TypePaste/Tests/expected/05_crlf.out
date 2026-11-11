@@ -1,0 +1,383 @@
+
+==================== inputs/05_crlf.txt ====================
+ENUM EDamageKind scoped=1 underlying='' macro=0 spec='' comment='Plain types without macros'
+   - Physical value='' umeta='' display='' hidden=0 comment=''
+   - Fire value='5' umeta='' display='' hidden=0 comment=''
+   - Ice value='Fire + 1' umeta='' display='' hidden=0 comment=''
+ENUM ELegacyMode scoped=0 underlying='' macro=0 spec='' comment=''
+   - LM_A value='' umeta='' display='' hidden=0 comment=''
+   - LM_B value='' umeta='' display='' hidden=0 comment=''
+STRUCT FPlainData parent='' parentText='' macro=0 spec='' comment=''
+   - Count : int32 (text='int32') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - X : float (text='float') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Y : float (text='float') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Z : float (text='float') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - bFlag : uint8 (text='uint8') uprop=0 spec='' init='' default='' dim='' bits=1 comment=''
+   - SmallNumber : uint16 (text='uint16') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - RawIcon : UTexture2D* (text='UTexture2D*') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Label : FString (text='FString') uprop=0 spec='' init='{ TEXT("Default") }' default='TEXT("Default")' dim='' bits=0 comment=''
+   - Grid : int32 (text='int32') uprop=0 spec='' init='' default='' dim='[4]' bits=0 comment=''
+   [RAW] comment='' text=<<static constexpr int32 MaxCount = 10;>>
+   - Kind : EDamageKind (text='EDamageKind') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Nested : TArray<TArray<int32>> (text='TArray<TArray<int32>>') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Thing : FMyEngineThing (text='FMyEngineThing') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Unknown : FUnknownThing (text='FUnknownThing') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Surface : EPhysicalSurface (text='EPhysicalSurface') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+   - Material : UMaterialInterface* (text='const class UMaterialInterface*') uprop=0 spec='' init='= nullptr' default='nullptr' dim='' bits=0 comment=''
+   [RAW] comment='' text=<<FPlainData()
+		: Count(0), X(1.f)
+	{
+		// ctor body
+		Kind = EDamageKind::Fire;
+	}>>
+   [RAW] comment='' text=<<FPlainData(int32 InCount) : Count(InCount), Label{ TEXT("x") } {}>>
+   [RAW] comment='' text=<<float GetTotal() const { return X + Y + Z; }>>
+   [RAW] comment='' text=<<void Reset();>>
+   [RAW] comment='' text=<<bool operator==(const FPlainData& Other) const
+	{
+		return Count == Other.Count;
+	}>>
+STRUCT FCycleA parent='' parentText='' macro=0 spec='' comment=''
+   - B : FCycleB (text='FCycleB') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+STRUCT FCycleB parent='' parentText='' macro=0 spec='' comment=''
+   - A : FCycleA (text='FCycleA') uprop=0 spec='' init='' default='' dim='' bits=0 comment=''
+STRUCT FSelf parent='' parentText='' macro=1 spec='' comment=''
+   - Inner : FSelf (text='FSelf') uprop=1 spec='' init='' default='' dim='' bits=0 comment=''
+  INFO  [24줄] 구조체 'FPlainData' 의 구문 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  INFO  [32줄] 구조체 'FPlainData' 의 함수/생성자 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  INFO  [39줄] 구조체 'FPlainData' 의 함수/생성자 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  INFO  [41줄] 구조체 'FPlainData' 의 함수/생성자 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  INFO  [43줄] 구조체 'FPlainData' 의 함수/생성자 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  INFO  [45줄] 구조체 'FPlainData' 의 함수/생성자 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)
+  WARN  [51줄] UCLASS 클래스는 지원하지 않아 건너뜁니다. (열거형/구조체만 생성합니다)
+---- single file: PlainDataTypes.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/ObjectPtr.h"
+#include "Engine/MyEngineThing.h"
+#include "Chaos/ChaosEngineInterface.h"
+#include "PlainDataTypes.generated.h"
+
+class UTexture2D;
+class UMaterialInterface;
+
+/** Plain types without macros */
+UENUM(BlueprintType)
+enum class EDamageKind : uint8
+{
+	Physical,
+	Fire = 5,
+	Ice = Fire + 1,
+};
+
+UENUM(BlueprintType)
+enum class ELegacyMode : uint8
+{
+	LM_A,
+	LM_B,
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FPlainData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	int32 Count = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float X = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float Y = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float Z = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	uint8 bFlag : 1;
+
+	UPROPERTY(EditAnywhere, Category = "PlainData")
+	uint16 SmallNumber = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	TObjectPtr<UTexture2D> RawIcon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FString Label{ TEXT("Default") };
+
+	UPROPERTY(EditAnywhere, Category = "PlainData")
+	int32 Grid[4];
+
+	static constexpr int32 MaxCount = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	EDamageKind Kind = EDamageKind::Physical;
+
+	TArray<TArray<int32>> Nested;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FMyEngineThing Thing;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FUnknownThing Unknown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	EPhysicalSurface Surface;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	TObjectPtr<const UMaterialInterface> Material = nullptr;
+
+	FPlainData()
+		: Count(0), X(1.f)
+	{
+		// ctor body
+		Kind = EDamageKind::Fire;
+	}
+
+	FPlainData(int32 InCount) : Count(InCount), Label{ TEXT("x") } {}
+
+	float GetTotal() const { return X + Y + Z; }
+
+	void Reset();
+
+	bool operator==(const FPlainData& Other) const
+	{
+		return Count == Other.Count;
+	}
+};
+
+USTRUCT()
+struct MYGAME_API FSelf
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FSelf Inner;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FCycleA
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CycleA")
+	FCycleB B;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FCycleB
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CycleB")
+	FCycleA A;
+};
+  INFO  열거형 'ELegacyMode' 을 enum class 로 바꿔 생성합니다.
+  ERROR 구조체가 서로(또는 자기 자신을) 값으로 포함하고 있습니다: FSelf, FCycleA, FCycleB. 한쪽을 TArray 나 포인터로 바꿔 주세요.
+  INFO  FPlainData::Nested 는 중첩 컨테이너라 리플렉션을 지원하지 않아 UPROPERTY 를 붙이지 않았습니다.
+  INFO  구조체 'FPlainData' 의 원시 포인터 2개를 TObjectPtr<> 로 바꿨습니다. (UE5 권장 방식)
+  INFO  'FUnknownThing' 타입이 정의된 헤더를 찾지 못했습니다. 컴파일 오류가 나면 #include 를 직접 추가하세요.
+  WARN  모듈의 Build.cs 에 다음 의존 모듈이 필요할 수 있습니다: PhysicsCore
+
+==================== PER-TYPE (inputs/05_crlf.txt) ====================
+---- DamageKind.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "DamageKind.generated.h"
+
+/** Plain types without macros */
+UENUM(BlueprintType)
+enum class EDamageKind : uint8
+{
+	Physical,
+	Fire = 5,
+	Ice = Fire + 1,
+};
+---- LegacyMode.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "LegacyMode.generated.h"
+
+UENUM(BlueprintType)
+enum class ELegacyMode : uint8
+{
+	LM_A,
+	LM_B,
+};
+---- PlainData.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/ObjectPtr.h"
+#include "DamageKind.h"
+#include "PlainData.generated.h"
+
+class UTexture2D;
+class UMaterialInterface;
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FPlainData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	int32 Count = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float X = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float Y = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	float Z = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	uint8 bFlag : 1;
+
+	UPROPERTY(EditAnywhere, Category = "PlainData")
+	uint16 SmallNumber = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	TObjectPtr<UTexture2D> RawIcon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FString Label{ TEXT("Default") };
+
+	UPROPERTY(EditAnywhere, Category = "PlainData")
+	int32 Grid[4];
+
+	static constexpr int32 MaxCount = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	EDamageKind Kind = EDamageKind::Physical;
+
+	TArray<TArray<int32>> Nested;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FMyEngineThing Thing;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	FUnknownThing Unknown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	EPhysicalSurface Surface;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PlainData")
+	TObjectPtr<const UMaterialInterface> Material = nullptr;
+
+	FPlainData()
+		: Count(0), X(1.f)
+	{
+		// ctor body
+		Kind = EDamageKind::Fire;
+	}
+
+	FPlainData(int32 InCount) : Count(InCount), Label{ TEXT("x") } {}
+
+	float GetTotal() const { return X + Y + Z; }
+
+	void Reset();
+
+	bool operator==(const FPlainData& Other) const
+	{
+		return Count == Other.Count;
+	}
+};
+---- Self.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Self.generated.h"
+
+USTRUCT()
+struct MYGAME_API FSelf
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FSelf Inner;
+};
+---- CycleA.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "CycleB.h"
+#include "CycleA.generated.h"
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FCycleA
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CycleA")
+	FCycleB B;
+};
+---- CycleB.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "CycleA.h"
+#include "CycleB.generated.h"
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FCycleB
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CycleB")
+	FCycleA A;
+};
+  INFO  열거형 'ELegacyMode' 을 enum class 로 바꿔 생성합니다.
+  ERROR 구조체가 서로(또는 자기 자신을) 값으로 포함하고 있습니다: FSelf, FCycleA, FCycleB. 한쪽을 TArray 나 포인터로 바꿔 주세요.
+  INFO  FPlainData::Nested 는 중첩 컨테이너라 리플렉션을 지원하지 않아 UPROPERTY 를 붙이지 않았습니다.
+  INFO  구조체 'FPlainData' 의 원시 포인터 2개를 TObjectPtr<> 로 바꿨습니다. (UE5 권장 방식)
+  INFO  'FMyEngineThing' 타입이 정의된 헤더를 찾지 못했습니다. 컴파일 오류가 나면 #include 를 직접 추가하세요.
+  INFO  'FUnknownThing' 타입이 정의된 헤더를 찾지 못했습니다. 컴파일 오류가 나면 #include 를 직접 추가하세요.
+  INFO  'EPhysicalSurface' 타입이 정의된 헤더를 찾지 못했습니다. 컴파일 오류가 나면 #include 를 직접 추가하세요.
+
+==================== DEFAULT VALUES ====================
+  10.f -> 10.0
+  -.5f -> -0.5
+  3. -> 3.0
+  1.5e-3f -> 1.5e-3
+  100 -> 100
+  UE_PI -> (skip)
+  0x1F -> 31
+  -42 -> -42
+  1'000'000 -> 1000000
+  5000000000LL -> 5000000000
+  300 -> (skip)
+  255u -> 255
+  true -> true
+  1 -> true
+  TEXT("Hello \"World\"") -> Hello "World"
+  NAME_None -> (skip)
+  FName(TEXT("Socket_R")) -> Socket_R
+  NSLOCTEXT("Ns", "Key", "검") -> 검
+  FText::GetEmpty() -> (skip)
+  TEXT("") -> (skip)
+
+==================== NAMING ====================
+  EWeaponType : keep=EWeaponType ES=E_WeaponType EF=E_WeaponType none=WeaponType
+  FWeaponData : keep=FWeaponData ES=S_WeaponData EF=F_WeaponData none=WeaponData
+  WeaponType : keep=WeaponType ES=S_WeaponType EF=F_WeaponType none=WeaponType
+  Foo : keep=Foo ES=S_Foo EF=F_Foo none=Foo

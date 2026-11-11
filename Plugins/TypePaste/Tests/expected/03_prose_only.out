@@ -1,0 +1,40 @@
+
+==================== inputs/03_prose_only.txt ====================
+  WARN  열거형(enum)이나 구조체(struct) 선언을 찾지 못했습니다. AI 답변의 코드 부분이 포함되었는지 확인해 주세요.
+---- single file: TypePasteTypes.h ----
+// 이 파일은 TypePaste 플러그인으로 생성되었습니다.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "TypePasteTypes.generated.h"
+
+==================== PER-TYPE (inputs/03_prose_only.txt) ====================
+
+==================== DEFAULT VALUES ====================
+  10.f -> 10.0
+  -.5f -> -0.5
+  3. -> 3.0
+  1.5e-3f -> 1.5e-3
+  100 -> 100
+  UE_PI -> (skip)
+  0x1F -> 31
+  -42 -> -42
+  1'000'000 -> 1000000
+  5000000000LL -> 5000000000
+  300 -> (skip)
+  255u -> 255
+  true -> true
+  1 -> true
+  TEXT("Hello \"World\"") -> Hello "World"
+  NAME_None -> (skip)
+  FName(TEXT("Socket_R")) -> Socket_R
+  NSLOCTEXT("Ns", "Key", "검") -> 검
+  FText::GetEmpty() -> (skip)
+  TEXT("") -> (skip)
+
+==================== NAMING ====================
+  EWeaponType : keep=EWeaponType ES=E_WeaponType EF=E_WeaponType none=WeaponType
+  FWeaponData : keep=FWeaponData ES=S_WeaponData EF=F_WeaponData none=WeaponData
+  WeaponType : keep=WeaponType ES=S_WeaponType EF=F_WeaponType none=WeaponType
+  Foo : keep=Foo ES=S_Foo EF=F_Foo none=Foo

@@ -9,8 +9,10 @@ UE 5.7 에디터 전용 플러그인. 사용자 기능 설명은 `README.md`, �
 ## 현재 상태 (중요)
 
 - 순수 로직(파서/C++ 생성기)은 엔진 밖에서 테스트 완료 (`Tests/`).
-- 에디터 연동 코드(에셋 생성, Slate UI, 모듈)는 **아직 실제 UE 5.7 에서 한 번도 빌드하지 않았다.**
-  → 첫 작업은 빌드 후 오류 수정. 의심 지점 목록은 `TASKS.md` 의 "첫 빌드 체크리스트".
+- 에디터 연동 코드(에셋 생성, Slate UI, 모듈)는 UE 5.7 에서 **빌드 통과** (2026-11-11, 오류·경고 없음, 유니티/비유니티 모두).
+  → **에디터에서 실제로 동작하는지는 아직 확인하지 않았다.** 다음 작업은 `TASKS.md` P0 의 에디터 수동 검증.
+- 저장소: `immigration2000/Plugin` 의 `feature/TypePaste` 브랜치, 호스트 프로젝트 `Plugin.uproject` 의 `Plugins/TypePaste`.
+  저장소 규칙상 `master` 에는 병합하지 않는다 (루트 `README.md`).
 
 ## 구조
 
@@ -51,6 +53,11 @@ Windows, 엔진 경로는 환경에 맞게 바꾼다.
 ```
 
 Git Bash 에서 실행할 때는 `cmd //c "..."` 로 감싸거나 PowerShell 을 쓴다.
+따옴표가 들어간 긴 명령은 `cmd //c` 에서 깨지기 쉬우므로 임시 `.bat` 에 적어 실행하는 편이 안전하다.
+
+- 이 저장소의 호스트 타깃 이름은 `PluginEditor` (`-Project=<저장소>\Plugin.uproject`).
+- UBT 의 적응형 빌드는 git 에서 바뀐 파일을 유니티 빌드에서 빼므로, 유니티 빌드 문제까지 보려면 `-DisableAdaptiveUnity` 를 붙인다.
+- `BuildPlugin` 은 `Config/FilterPlugin.ini` 가 없으면 만들어 둔다 (커밋되어 있음).
 
 ## 테스트 (파서/생성기를 고쳤으면 반드시)
 
@@ -60,9 +67,10 @@ cd Tests
 UPDATE=1 ./run_tests.sh        # 출력이 '의도대로' 바뀐 경우에만 골든 갱신 → git diff 로 확인
 ```
 
-- MSVC 로 돌릴 때: Developer Command Prompt 에서
-  `cl /std:c++20 /EHsc /utf-8 /I mock /I ..\Source\TypePaste\Private test_main.cpp ..\Source\TypePaste\Private\TypePaste{Types,Parser,CppWriter}.cpp`
-  (와일드카드는 cmd 에서 안 되므로 세 파일을 각각 적는다)
+- Windows(g++/WSL 없음)에서는 `Tests\run_tests.bat` — MSVC 로 같은 빌드·골든 비교·퍼징을 한다.
+  vswhere 로 Visual Studio 를 찾으므로 일반 명령 프롬프트·Git Bash(`cmd //c "<절대경로>\run_tests.bat"`)에서도 된다.
+  갱신은 `set UPDATE=1` 후 실행. (`test_main.cpp` 는 Windows 에서 stdout 을 바이너리 모드로 바꿔 골든과 바이트 단위로 같게 출력한다)
+- 저장소 루트 `.gitignore` 가 `*.out` 을 무시하므로 플러그인 `.gitignore` 에 `!Tests/expected/*.out` 예외가 있다. 새 골든 파일이 커밋에 들어갔는지 확인할 것.
 - 새 입력 사례는 `Tests/inputs/NN_이름.txt` 로 추가하고 `UPDATE=1` 로 골든 생성 후 출력 내용을 직접 검토한다.
 
 ## 코딩 규칙

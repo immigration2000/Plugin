@@ -4,3 +4,5 @@ Tests/build/
 *.sln
 .vs/
 .idea/
+# 저장소 루트 .gitignore 의 *.out(실행 파일) 규칙에서 테스트 골든 출력은 제외
+!Tests/expected/*.out
