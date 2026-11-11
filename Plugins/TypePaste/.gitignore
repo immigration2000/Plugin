@@ -1,0 +1,6 @@
+Binaries/
+Intermediate/
+Tests/build/
+*.sln
+.vs/
+.idea/

@@ -1,0 +1,32 @@
+USTRUCT(BlueprintType)
+struct FInventory
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FInventorySlot> Slots;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Selected;
+};
+
+USTRUCT(BlueprintType)
+struct FInventorySlot
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FItemInfo Item;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Quantity = 1;
+};
+
+USTRUCT(BlueprintType)
+struct FItemInfo
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName Id;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemCategory Category;
+};
+
+UENUM(BlueprintType)
+enum class EItemCategory : uint8 { Weapon, Armor, Consumable };

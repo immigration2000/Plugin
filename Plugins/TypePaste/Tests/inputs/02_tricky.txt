@@ -1,0 +1,73 @@
+// Plain types without macros
+enum class EDamageKind
+{
+	Physical,
+	Fire = 5,
+	Ice = Fire + 1
+};
+
+enum ELegacyMode
+{
+	LM_A,
+	LM_B
+};
+
+struct FPlainData
+{
+	int32 Count;
+	float X, Y, Z;
+	uint8 bFlag : 1;
+	uint16 SmallNumber;
+	UTexture2D* RawIcon;
+	FString Label{ TEXT("Default") };
+	int32 Grid[4];
+	static constexpr int32 MaxCount = 10;
+	EDamageKind Kind;
+	TArray<TArray<int32>> Nested;
+	FMyEngineThing Thing;
+	FUnknownThing Unknown;
+	EPhysicalSurface Surface;
+	const class UMaterialInterface* Material = nullptr;
+
+	FPlainData()
+		: Count(0), X(1.f)
+	{
+		// ctor body
+		Kind = EDamageKind::Fire;
+	}
+
+	FPlainData(int32 InCount) : Count(InCount), Label{ TEXT("x") } {}
+
+	float GetTotal() const { return X + Y + Z; }
+
+	void Reset();
+
+	bool operator==(const FPlainData& Other) const
+	{
+		return Count == Other.Count;
+	}
+};
+
+UCLASS()
+class MYGAME_API UMyComponent : public UActorComponent
+{
+	GENERATED_BODY()
+	UPROPERTY() int32 ShouldBeSkipped;
+};
+
+struct FCycleA
+{
+	FCycleB B;
+};
+
+struct FCycleB
+{
+	FCycleA A;
+};
+
+USTRUCT()
+struct FSelf
+{
+	GENERATED_BODY()
+	UPROPERTY() FSelf Inner;
+};

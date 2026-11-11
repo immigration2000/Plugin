@@ -1,0 +1,90 @@
+좋아요! 무기 시스템을 위한 열거형과 구조체를 이렇게 설계해 봤어요.
+
+## 1. 무기 종류
+
+```cpp
+#pragma once
+
+#include "CoreMinimal.h"
+#include "WeaponTypes.generated.h"
+
+/** 무기의 대분류 */
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	None    UMETA(DisplayName = "없음"),
+	Melee   UMETA(DisplayName = "근접"),   // 칼, 둔기
+	Ranged  UMETA(DisplayName = "원거리"), // 활, 총
+	// 마법 무기
+	Magic   UMETA(DisplayName = "마법", ToolTip = "마나를 소모"),
+	MAX     UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+	Common = 0,
+	Rare = 1,
+	Epic,
+	Legendary
+};
+
+// 무기 한 개의 데이터
+USTRUCT(BlueprintType)
+struct FWeaponStats
+{
+	GENERATED_BODY()
+
+	// 기본 공격력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	float Damage = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (ClampMin = "0.1"))
+	float AttackSpeed = 1.0f; // 초당 공격 횟수
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxDurability = 100;
+};
+
+USTRUCT(BlueprintType)
+struct MYGAME_API FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName WeaponId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	EWeaponType WeaponType = EWeaponType::Melee;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	TEnumAsByte<EItemRarity> Rarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FWeaponStats Stats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TArray<FGameplayTag> Tags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TMap<FName, float> BonusStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	bool bIsTwoHanded = false;
+};
+```
+
+이렇게 하면 데이터 테이블로도 바로 쓸 수 있어요. 궁금한 점이 있으면 말씀해 주세요!

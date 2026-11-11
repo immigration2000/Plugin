@@ -1,0 +1,1 @@
+이 struct는 enum을 쓰지 않아요. Here's what I'd do: use a struct to hold data, and an enum for state.
