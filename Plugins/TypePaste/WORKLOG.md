@@ -42,3 +42,31 @@
 - 에디터 실행·수동 검증은 하지 않음
 
 **다음**: TASKS.md P0 — 에디터에서 Tools 메뉴/블루프린트 생성/C++ 생성/설정 유지 수동 검증
+
+## 2026-11-11 — Claude Code (Opus 5.5) — 영어만 규칙, UHT ToolTip 오류 수정, 빌드 후 다시 열기
+
+**요청**: 한글 때문에 빌드가 안 됨 → 개발에서는 한글을 안 쓰니 무조건 영어로. 솔루션이 없으면 생성·빌드가 너무 오래 걸리니
+C++ 생성 후 에디터 닫고 배치 파일로 빌드하고 바로 프로젝트로 들어가는 워크플로.
+
+**원인 조사**: 사용자가 생성한 `Source/Plugin/Types/WeaponStatsTypes.h` 로 재현 →
+`UHT Error: Metadata key 'ToolTip' first seen with value '마법 무기' then '마나를 소모'`.
+한글 자체가 아니라 `/** 주석 */` 과 `UMETA(ToolTip=...)` 가 같은 항목에 같이 나간 생성기 버그 (UHT 는 주석을 ToolTip 으로 씀).
+
+**한 일**
+- `TypePasteUtils::EnforceEnglishOnly` / `RemoveNonAsciiSpecifiers` / `IsAsciiText` 추가, 파서 끝에서 호출 (D16)
+- C++ 생성기: ToolTip 지정자가 있으면 주석 생략 (D17), 머리 주석 영어, 결과에 ASCII 외 문자가 있으면 오류
+- 내보내기: 생성기 오류가 있으면 파일을 쓰지 않음, 솔루션이 없으면 IDE 열기 생략, 루트에 Build.bat 복사 (D19)
+- AI 요청 프롬프트를 영어로, 영어만 쓰도록 요구. 도움말에 규칙·빌드 안내 추가
+- `Scripts/Build.bat` + `TypePasteBuildLauncher` + 패널 [빌드 후 다시 열기] 버튼, C++ 생성 직후 확인 창 (D18).
+  Build.cs 에 `MainFrame`, `Config/FilterPlugin.ini` 에 `/Scripts/...`
+- 테스트 입력 `06_english_only.txt` (meta 안 한글, Category, 문자열 기본값, 원문 구문, ToolTip+주석) 추가, 골든 갱신
+  (01~05 는 한글 주석/DisplayName 제거와 머리 주석만 바뀜 — diff 확인함)
+
+**테스트**
+- `Tests/run_tests.bat`: 골든 6종 일치, 퍼징 20,000회 통과
+- 사용자 헤더를 새 생성기 출력(영어)으로 바꿔 `PluginEditor` 빌드 → UHT 통과, 빌드 성공. 강제 유니티 빌드도 성공
+- 루트 `Build.bat -noopen`: 엔진 자동 탐색(런처 설치 목록 `LauncherInstalled.dat` — 이 PC 에는 HKLM 레지스트리 키가 없음),
+  빌드 성공 약 30초. `-waitpid` 로 더미 프로세스 종료 대기 후 빌드 확인
+- **확인 못 함**: 에디터 안에서 버튼/확인 창 → 에디터 종료 → 다시 열기 전체 흐름, Build.bat 의 에디터 실행(`-noopen` 없이)
+
+**다음**: TASKS.md P0 수동 검증 (특히 빌드 후 다시 열기)

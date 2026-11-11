@@ -2,6 +2,7 @@
 
 #include "STypePastePanel.h"
 #include "TypePasteBlueprintBuilder.h"
+#include "TypePasteBuildLauncher.h"
 #include "TypePasteCppExporter.h"
 #include "TypePasteModule.h"
 #include "TypePasteParser.h"
@@ -14,6 +15,7 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Misc/MessageDialog.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
@@ -219,13 +221,32 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 		.HAlign(HAlign_Right)
 		.Padding(6.f, 2.f, 6.f, 8.f)
 		[
-			SNew(SButton)
-			.ContentPadding(FMargin(16.f, 4.f))
-			.IsEnabled(this, &STypePastePanel::IsGenerateEnabled)
-			.OnClicked(this, &STypePastePanel::OnGenerateClicked)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.f, 0.f, 8.f, 0.f)
 			[
-				SNew(STextBlock)
-				.Text(this, &STypePastePanel::GetGenerateButtonText)
+				SNew(SButton)
+				.ContentPadding(FMargin(12.f, 4.f))
+				.Visibility_Lambda([this]() { return Mode == ETPTargetMode::Cpp ? EVisibility::Visible : EVisibility::Collapsed; })
+				.ToolTipText(LOCTEXT("BuildAndReopenTip", "에디터를 닫고 프로젝트를 빌드한 뒤(솔루션 파일 필요 없음) 다시 엽니다. 저장하지 않은 에셋이 있으면 먼저 저장 여부를 묻습니다."))
+				.OnClicked(this, &STypePastePanel::OnBuildAndReopenClicked)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("BuildAndReopen", "빌드 후 다시 열기"))
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				SNew(SButton)
+				.ContentPadding(FMargin(16.f, 4.f))
+				.IsEnabled(this, &STypePastePanel::IsGenerateEnabled)
+				.OnClicked(this, &STypePastePanel::OnGenerateClicked)
+				[
+					SNew(STextBlock)
+					.Text(this, &STypePastePanel::GetGenerateButtonText)
+				]
 			]
 		]
 	];
@@ -685,8 +706,39 @@ FReply STypePastePanel::OnGenerateClicked()
 			Headline += Path;
 		}
 		ShowResult(Result.Messages, Headline, bAnyWritten);
+
+		if (bAnyWritten)
+		{
+			const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::YesNo,
+				LOCTEXT("AskBuildAndReopen", "C++ 헤더를 만들었습니다. 새 타입은 빌드해야 반영됩니다.\n\n지금 에디터를 닫고 빌드한 뒤 프로젝트를 다시 열까요?\n(나중에 [빌드 후 다시 열기] 버튼이나 프로젝트 루트의 Build.bat 으로도 할 수 있습니다)"));
+			if (Answer == EAppReturnType::Yes)
+			{
+				StartBuildAndReopen();
+			}
+		}
 	}
 	return FReply::Handled();
+}
+
+FReply STypePastePanel::OnBuildAndReopenClicked()
+{
+	const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::OkCancel,
+		LOCTEXT("ConfirmBuildAndReopen", "에디터를 닫고 프로젝트를 빌드한 뒤 다시 엽니다.\n빌드 진행 상황은 새 콘솔 창에 표시됩니다."));
+	if (Answer == EAppReturnType::Ok)
+	{
+		StartBuildAndReopen();
+	}
+	return FReply::Handled();
+}
+
+void STypePastePanel::StartBuildAndReopen()
+{
+	SaveSettings();
+	TArray<FTPMessage> Messages;
+	if (!FTypePasteBuildLauncher::LaunchBuildAndReopen(Messages))
+	{
+		ShowResult(Messages, TEXT("빌드 스크립트를 실행하지 못했습니다"), false);
+	}
 }
 
 // ---------------------------------------------------------------------------

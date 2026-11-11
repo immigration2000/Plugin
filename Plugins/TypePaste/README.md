@@ -21,8 +21,8 @@ AI(Claude, ChatGPT 등)에게 "이런 기능에 필요한 열거형/구조체 �
          TypePaste.uplugin
          Source/...
    ```
-2. `.uproject` 우클릭 → **Generate Visual Studio project files** → IDE 에서 빌드합니다.
-   (또는 에디터를 켜면 "모듈을 다시 빌드할까요?" 에서 **예**)
+2. 에디터를 닫은 상태에서 플러그인의 `Scripts/Build.bat` 을 프로젝트 루트에 복사해 실행합니다 (솔루션 파일 필요 없음, 빌드 후 프로젝트가 열림).
+   또는 `.uproject` 우클릭 → **Generate Visual Studio project files** → IDE 에서 빌드, 혹은 에디터를 켜고 "모듈을 다시 빌드할까요?" 에서 **예**
    - 블루프린트 전용 프로젝트라면 먼저 C++ 클래스를 하나 추가해 C++ 프로젝트로 만들어야 플러그인을 빌드할 수 있습니다.
 3. 에디터 메뉴 **Tools → TypePaste (타입 붙여넣기)** 로 창을 엽니다.
 
@@ -35,6 +35,25 @@ AI(Claude, ChatGPT 등)에게 "이런 기능에 필요한 열거형/구조체 �
    - **블루프린트 에셋**: 저장 경로(`/Game/Types` 등), 에셋 이름 규칙(그대로 / `E_`·`S_` / `E_`·`F_` / 접두사 없음)
    - **C++ 헤더**: 모듈, 하위 폴더, 한 파일로 묶을지 타입마다 나눌지
 4. 오른쪽 미리보기에서 결과와 경고를 확인하고 **[생성]** 을 누릅니다.
+5. (C++ 헤더) 생성 후 "지금 빌드할까요?" 에서 **예** 또는 **[빌드 후 다시 열기]** 를 누르면 에디터가 닫히고, 새 콘솔 창에서 빌드한 뒤 프로젝트를 다시 엽니다.
+
+## 생성 결과는 영어만
+
+개발용 코드·에셋에는 영어만 씁니다. 붙여넣은 답변에 한글 등 영어가 아닌 텍스트가 있으면 **빼고** 만들고 미리보기에 경고로 알려 줍니다.
+
+- 주석, `UMETA(DisplayName/ToolTip)`, `meta = (...)` 안의 값, `Category` → 뺌 (`Category` 는 구조체 이름으로 채움)
+- 기본값(`TEXT("검")` 등) → 기본값 없이 생성, 함수 같은 원문 구문 → 뺌
+- **[AI 요청 프롬프트 복사]** 의 요청문은 AI 에게 처음부터 영어로만 답하도록 요구합니다.
+
+## 빌드 후 다시 열기 (Build.bat)
+
+새 UENUM/USTRUCT 는 에디터를 닫고 빌드해야 반영됩니다. TypePaste 는 이 과정을 버튼 하나로 합니다.
+
+- 에디터에서: C++ 헤더 생성 직후 확인 창 또는 **[빌드 후 다시 열기]** 버튼 → 저장 여부 확인 → 에디터 종료 → 콘솔 창에서 빌드 → 성공하면 프로젝트가 다시 열림. 실패하면 콘솔 창에 오류가 남습니다.
+- 직접 실행: C++ 헤더를 처음 만들 때 프로젝트 루트에 `Build.bat` 이 복사됩니다 (이미 다른 `Build.bat` 이 있으면 건드리지 않음). 에디터를 닫고 더블클릭하세요.
+  - 옵션: `-noopen`(빌드만), `-config DebugGame`, `-engine "<엔진 폴더>"`, `-project "<x.uproject>"`
+  - 엔진 위치는 `.uproject` 의 `EngineAssociation` 으로 찾습니다 (레지스트리, 런처 설치 목록, `Program Files\Epic Games\UE_<버전>` 순).
+- 솔루션(.sln)·Visual Studio 프로젝트 파일 생성이 필요 없습니다. 내부적으로 엔진의 `Build.bat <프로젝트>Editor Win64 Development` 를 실행합니다.
 
 옵션(경로, 이름 규칙, 모듈 등)은 프로젝트별로 기억됩니다.
 
@@ -72,7 +91,7 @@ AI(Claude, ChatGPT 등)에게 "이런 기능에 필요한 열거형/구조체 �
 | `int32 Grid[4]` | Array (안내 메시지) |
 
 - 기본값: 숫자 · bool · 문자열 · Name · Text · 열거형은 적용, 구조체(`FVector(…)` 등)와 컨테이너 기본값은 적용하지 않고 안내합니다.
-- 열거형은 `UMETA(DisplayName)` 이 있으면 그것을, 없으면 항목 이름을 블루프린트 표시 이름으로 씁니다. `UMETA(Hidden)` 항목(MAX 등)은 뺍니다.
+- 열거형은 `UMETA(DisplayName)` 이 (영어로) 있으면 그것을, 없으면 항목 이름을 블루프린트 표시 이름으로 씁니다. `UMETA(Hidden)` 항목(MAX 등)은 뺍니다.
 - 구조체를 서로 값으로 포함하면 의존 순서대로 만들고, 순환 참조는 오류로 알려 줍니다.
 - 같은 이름의 에셋이 이미 있으면 **덮어쓰지 않고** 기존 에셋을 참조합니다.
 
@@ -86,7 +105,8 @@ AI(Claude, ChatGPT 등)에게 "이런 기능에 필요한 열거형/구조체 �
   - 원시 UObject 포인터 → `TObjectPtr<>`, `TEnumAsByte<enum class>` → enum class
   - 구조체를 의존 순서로 정렬, 필요한 `#include` 와 전방 선언 (엔진 타입은 리플렉션 정보로 헤더 위치를 찾음)
   - Build.cs 에 필요한 모듈(GameplayTags 등) 안내, 이미 같은 이름의 C++ 타입이 있으면 경고
-- 파일은 UTF-8(BOM) 으로 저장해 한글 주석이 MSVC 에서 깨지지 않습니다.
+- 내용은 영어(ASCII)만 들어갑니다. 주석과 `ToolTip` 지정자가 함께 있으면 주석은 넣지 않습니다 (UHT 의 ToolTip 중복 오류 방지).
+- 솔루션 파일이 없으면 "생성 후 IDE 에서 열기" 는 건너뜁니다 (프로젝트 파일 생성이 오래 걸리므로).
 - 새 UENUM/USTRUCT 는 **에디터를 닫고 IDE 에서 빌드**해야 반영됩니다. (라이브 코딩으로는 새 리플렉션 타입이 잘 반영되지 않습니다)
 
 ## 제한 사항
@@ -114,6 +134,8 @@ AI(Claude, ChatGPT 등)에게 "이런 기능에 필요한 열거형/구조체 �
 | `STypePastePanel.h/.cpp` | 에디터 탭 UI |
 | `TypePastePrompt.h` | AI 요청 프롬프트, 도움말 |
 | `TypePasteModule.h/.cpp` | 모듈 시작, Tools 메뉴 탭 등록 |
+| `TypePasteBuildLauncher.h/.cpp` | 빌드 후 다시 열기 (Scripts/Build.bat 실행, 에디터 종료 요청) |
+| `Scripts/Build.bat` | 에디터 종료 대기 → UBT 빌드 → 프로젝트 열기 (솔루션 불필요) |
 
 파서·C++ 생성기(`TypePasteTypes`, `TypePasteParser`, `TypePasteCppWriter`)는 에디터 API 에 의존하지 않는 순수 로직이라 단독으로 테스트할 수 있습니다.
 

@@ -234,4 +234,20 @@ namespace TypePasteUtils
 
 	/** C++ 식별자로 유효한지 */
 	bool IsValidIdentifier(const FString& In);
+
+	/** 모든 문자가 ASCII(0~127) 인지 */
+	bool IsAsciiText(const FString& In);
+
+	/**
+	 * 지정자 목록에서 ASCII 가 아닌 문자가 들어 있는 항목을 뺀다. meta = (...) 안쪽도 같은 규칙으로 정리하고, 비면 meta 째로 뺀다.
+	 * 예) EditAnywhere, Category = "무기", meta = (ToolTip = "설명", ClampMin = "0") → EditAnywhere, meta = (ClampMin = "0")
+	 * 뺀 항목의 키 이름(Category, ToolTip ...)을 OutRemovedKeys 에 추가한다. 바뀐 것이 없으면 원문 그대로 돌려준다.
+	 */
+	FString RemoveNonAsciiSpecifiers(const FString& Specifiers, TArray<FString>& OutRemovedKeys);
+
+	/**
+	 * 생성 결과(C++ 헤더, 블루프린트 에셋)는 영어만 쓴다 (DECISIONS D16).
+	 * 파싱 결과에서 ASCII 가 아닌 주석, 지정자 값(DisplayName/ToolTip/Category ...), 기본값, 원문 구문을 빼고 안내 메시지를 남긴다.
+	 */
+	void EnforceEnglishOnly(FTPParseResult& Result);
 }

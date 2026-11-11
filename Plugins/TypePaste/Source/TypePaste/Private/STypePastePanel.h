@@ -44,6 +44,8 @@ private:
 	FReply OnPasteClicked();
 	FReply OnClearClicked();
 	FReply OnGenerateClicked();
+	FReply OnBuildAndReopenClicked();
+	void StartBuildAndReopen();
 	void OnPathPicked(const FString& Path);
 
 	// 상태 표시

@@ -1413,6 +1413,9 @@ FTPParseResult FTypePasteParser::Parse(const FString& Source)
 	FParser Parser(Source, MoveTemp(Tokens), Result);
 	Parser.Run();
 
+	// 생성 결과는 영어만 (D16): 한글 등 ASCII 가 아닌 텍스트는 여기서 빼서 블루프린트/C++ 모두에 적용
+	TypePasteUtils::EnforceEnglishOnly(Result);
+
 	if (!Result.HasAnyType() && !Result.HasErrors() && !Source.TrimStartAndEnd().IsEmpty())
 	{
 		Result.AddWarning(TEXT("열거형(enum)이나 구조체(struct) 선언을 찾지 못했습니다. AI 답변의 코드 부분이 포함되었는지 확인해 주세요."));

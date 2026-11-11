@@ -9,23 +9,26 @@ namespace TypePastePrompt
 	inline const TCHAR* GetRequestPrompt()
 	{
 		return TEXT(
-			"언리얼 엔진 5 C++ 기준으로 아래 기능에 필요한 열거형과 구조체를 설계해 주세요.\n"
-			"결과 코드는 하나의 코드 블록에 모아 주고, 아래 규칙을 지켜 주세요.\n"
+			"Design the enums and structs needed for the feature below, for Unreal Engine 5 C++.\n"
+			"Put all of the code in a single code block and follow these rules.\n"
 			"\n"
-			"[규칙]\n"
-			"- 열거형: UENUM(BlueprintType) + enum class EName : uint8 형식. 항목마다 UMETA(DisplayName = \"한글 표시 이름\") 를 붙이기\n"
-			"- 구조체: USTRUCT(BlueprintType) + struct FName { GENERATED_BODY() ... } 형식\n"
-			"- 멤버: UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = \"...\") 를 붙이고, 숫자/bool/열거형 멤버는 기본값으로 초기화\n"
-			"- 설명은 각 열거형 항목/멤버 바로 위 줄에 // 주석으로 (툴팁이 됩니다)\n"
-			"- 사용할 수 있는 타입: bool, int32, int64, uint8, float, double, FString, FName, FText,\n"
-			"  FVector, FRotator, FTransform, FLinearColor, FGameplayTag, 이번에 정의한 다른 열거형/구조체,\n"
-			"  TArray<>, TSet<>, TMap<> (컨테이너 중첩 금지), TObjectPtr<UClass>, TSubclassOf<>, TSoftObjectPtr<>, TSoftClassPtr<>\n"
-			"- 함수, 생성자, static 멤버, 비트필드, 고정 크기 배열은 쓰지 않기\n"
-			"- 구조체가 다른 구조체를 값으로 포함할 때 서로를 순환 참조하지 않기\n"
-			"- 데이터 테이블 행으로 쓸 구조체는 FTableRowBase 를 상속\n"
+			"[Rules]\n"
+			"- ENGLISH ONLY: every identifier, comment, DisplayName, ToolTip, Category and string value must be plain English (ASCII).\n"
+			"  Do not use any other language in the code, even if the feature description below is written in another language.\n"
+			"- Enums: UENUM(BlueprintType) + enum class EName : uint8. Add UMETA(DisplayName = \"Readable Name\") to each entry\n"
+			"- Structs: USTRUCT(BlueprintType) + struct FName { GENERATED_BODY() ... }\n"
+			"- Members: add UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = \"...\") and initialize numeric/bool/enum members with a default value\n"
+			"- Describe each enum entry/member with a // comment on the line directly above it (it becomes the tooltip).\n"
+			"  Do not also add a ToolTip specifier when there is a comment.\n"
+			"- Allowed types: bool, int32, int64, uint8, float, double, FString, FName, FText,\n"
+			"  FVector, FRotator, FTransform, FLinearColor, FGameplayTag, other enums/structs defined here,\n"
+			"  TArray<>, TSet<>, TMap<> (no nested containers), TObjectPtr<UClass>, TSubclassOf<>, TSoftObjectPtr<>, TSoftClassPtr<>\n"
+			"- Do not use functions, constructors, static members, bitfields or fixed-size arrays\n"
+			"- Structs must not contain each other by value in a cycle\n"
+			"- Structs used as data table rows inherit from FTableRowBase\n"
 			"\n"
-			"[설계할 기능]\n"
-			"(여기에 원하는 기능을 적어 주세요. 예: RPG 인벤토리 - 아이템 종류, 등급, 아이템 데이터, 슬롯)\n"
+			"[Feature to design]\n"
+			"(Describe the feature here. Example: RPG inventory - item types, rarity, item data, slots)\n"
 		);
 	}
 
@@ -46,6 +49,12 @@ namespace TypePastePrompt
 			"- UENUM / enum class / enum, USTRUCT / struct (매크로가 없어도 인식)\n"
 			"- UMETA(DisplayName, Hidden, ToolTip), UPROPERTY(...), 기본값(= 10.f, { 5 }), // 와 /** */ 주석 → 툴팁\n"
 			"- 함수/생성자 등 해석할 수 없는 구문은 C++ 생성 시 원문 그대로 보존합니다\n"
+			"\n"
+			"생성 결과는 영어만 씁니다\n"
+			"- 한글 등 영어가 아닌 주석·DisplayName·ToolTip·Category·기본값은 빼고 만듭니다 (미리보기에 경고로 표시)\n"
+			"- 프롬프트 복사 버튼으로 요청하면 AI 가 처음부터 영어로 답합니다\n"
+			"\n"
+			"C++ 헤더를 만든 뒤에는 [빌드 후 다시 열기] 로 에디터를 닫고 빌드한 다음 프로젝트를 다시 엽니다 (솔루션 파일 필요 없음)\n"
 		);
 	}
 }

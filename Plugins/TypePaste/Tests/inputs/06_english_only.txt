@@ -1,0 +1,39 @@
+```cpp
+/** Item category */
+UENUM(BlueprintType, meta = (ToolTip = "아이템 분류"))
+enum class EItemKind : uint8
+{
+	// Sharp weapons
+	Sword UMETA(DisplayName = "Sword", ToolTip = "One-handed blade"),
+	// Same text as the tooltip
+	Bow UMETA(ToolTip = "Same text as the tooltip"),
+	Potion UMETA(DisplayName = "포션"),
+	Junk
+};
+
+/** Inventory entry */
+USTRUCT(BlueprintType, meta = (ToolTip = "Inventory row"))
+struct FInventoryEntry
+{
+	GENERATED_BODY()
+
+	// Display name of the item
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "아이템", meta = (DisplayName = "이름", ClampMin = "0"))
+	FString ItemName = TEXT("검");
+
+	// Stack count (스택)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ToolTip = "How many are stacked"))
+	int32 Count = 1;
+
+	UPROPERTY(EditAnywhere, meta = (ToolTip = "설명"))
+	FText Description = NSLOCTEXT("Inv", "Desc", "설명 없음");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	EItemKind Kind = EItemKind::Sword;
+
+	// 한글 주석이 있는 함수
+	bool IsEmpty() const { return Count <= 0; }
+
+	FString GetLabel() const { return TEXT("라벨"); }
+};
+```

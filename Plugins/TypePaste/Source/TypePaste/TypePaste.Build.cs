@@ -23,7 +23,8 @@ public class TypePaste : ModuleRules
 			"BlueprintGraph",         // UEdGraphSchema_K2 (핀 타입)
 			"ContentBrowser",         // 경로 선택기, 생성 후 위치 표시
 			"InputCore",
-			"Projects",               // 프로젝트 모듈 목록
+			"MainFrame",              // 빌드 후 다시 열기: 에디터 종료 요청
+			"Projects",               // 프로젝트 모듈 목록, 플러그인 폴더(빌드 스크립트) 찾기
 			"Slate",
 			"SlateCore",
 			"UnrealEd",               // FEnumEditorUtils, FStructureEditorUtils, 팩토리

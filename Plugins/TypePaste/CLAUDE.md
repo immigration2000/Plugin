@@ -29,8 +29,10 @@ TypePaste/
       TypePasteCppExporter.*     [에디터] 모듈 폴더/리플렉션 include 조회/파일 쓰기
       TypePasteBlueprintBuilder.* [에디터] UserDefinedEnum/Struct 생성, 미리보기
       STypePastePanel.*          [에디터] Slate 탭 UI, 설정 저장(EditorPerProjectIni [TypePaste])
-      TypePastePrompt.h          AI 요청 프롬프트, 도움말 문구
+      TypePastePrompt.h          AI 요청 프롬프트(영어로만 답하게 요구), 도움말 문구
+      TypePasteBuildLauncher.*   [에디터] 빌드 후 다시 열기: Scripts/Build.bat 실행 + 에디터 종료 요청, 루트에 Build.bat 복사
       TypePasteModule.cpp        Tools 메뉴 노매드 탭 등록
+  Scripts/Build.bat              에디터 PID 종료 대기 → UBT 빌드 → UnrealEditor 로 프로젝트 열기 (ASCII 만, CRLF)
   Tests/                         엔진 없이 도는 순수 로직 테스트 (mock CoreMinimal.h)
   Samples/Example_AI_Answer.txt  수동 검증용 입력
 ```
@@ -74,6 +76,12 @@ UPDATE=1 ./run_tests.sh        # 출력이 '의도대로' 바뀐 경우에만 �
 - 새 입력 사례는 `Tests/inputs/NN_이름.txt` 로 추가하고 `UPDATE=1` 로 골든 생성 후 출력 내용을 직접 검토한다.
 
 ## 코딩 규칙
+
+- **생성 결과(C++ 헤더, 블루프린트 에셋)는 영어(ASCII)만** — 사용자 결정 (DECISIONS D16). 파서 끝의 `EnforceEnglishOnly` 가
+  한글 등을 빼고, C++ 생성기는 결과에 ASCII 가 아닌 문자가 남으면 오류를 낸다. 생성기에 새 고정 문구를 넣을 때도 영어로.
+- 생성기는 주석과 `ToolTip` 지정자를 동시에 내보내지 않는다 (UHT ToolTip 중복 오류, D17).
+- `Scripts/*.bat` 은 ASCII 만, CRLF. Git Bash 의 `sed -i` 는 CR 을 지우므로 bat 수정 후 줄바꿈을 확인할 것.
+  Windows 도구는 `%SYS32%\find.exe` 처럼 전체 경로로 (PATH 에 Git 의 find 가 먼저 있을 수 있음). `for /f ('...')` 안은 따옴표로 시작하지 않게.
 
 - **순수 로직 3개 파일**(Types/Parser/CppWriter)에는 `CoreMinimal.h` 외 엔진 헤더를 넣지 않는다. 그래야 mock 테스트가 유지된다.
   mock 에 없는 FString/TArray API 를 쓰면 `Tests/mock/CoreMinimal.h` 에 **UE 와 같은 시그니처·의미**로 추가한다.

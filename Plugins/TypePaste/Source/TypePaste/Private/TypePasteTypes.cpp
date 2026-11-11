@@ -835,3 +835,271 @@ bool TypePasteUtils::IsValidIdentifier(const FString& In)
 	}
 	return true;
 }
+
+bool TypePasteUtils::IsAsciiText(const FString& In)
+{
+	for (int32 Index = 0; Index < In.Len(); ++Index)
+	{
+		if ((uint32)In[Index] > 127u)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+namespace TypePasteUtilsPrivate
+{
+	/** 따옴표·괄호 밖의 쉼표로 지정자 목록을 나눈다 (각 조각은 앞뒤 공백 제거) */
+	static TArray<FString> SplitTopLevelSpecifiers(const FString& Specifiers)
+	{
+		TArray<FString> Parts;
+		const int32 Len = Specifiers.Len();
+		int32 Depth = 0;
+		int32 Start = 0;
+		int32 Index = 0;
+		while (Index < Len)
+		{
+			const TCHAR C = Specifiers[Index];
+			if (C == TEXT('"'))
+			{
+				Index = SkipQuoted(Specifiers, Index);
+				continue;
+			}
+			if (C == TEXT('('))
+			{
+				++Depth;
+			}
+			else if (C == TEXT(')'))
+			{
+				Depth = FMath::Max(0, Depth - 1);
+			}
+			else if (C == TEXT(',') && Depth == 0)
+			{
+				Parts.Add(Specifiers.Mid(Start, Index - Start).TrimStartAndEnd());
+				Start = Index + 1;
+			}
+			++Index;
+		}
+		Parts.Add(Specifiers.Mid(Start).TrimStartAndEnd());
+
+		TArray<FString> NonEmpty;
+		for (const FString& Part : Parts)
+		{
+			if (!Part.IsEmpty())
+			{
+				NonEmpty.Add(Part);
+			}
+		}
+		return NonEmpty;
+	}
+
+	/** 지정자 조각의 앞 식별자. 예) Category = "X" → Category */
+	static FString GetSpecifierKey(const FString& Part)
+	{
+		int32 Index = 0;
+		while (Index < Part.Len() && TypePasteUtils::IsIdentChar(Part[Index]))
+		{
+			++Index;
+		}
+		return Part.Left(Index);
+	}
+
+	/** Key = ( ... ) 형태면 괄호 안쪽 범위를 돌려준다 */
+	static bool FindNestedList(const FString& Part, int32& OutInnerStart, int32& OutInnerEnd)
+	{
+		int32 Index = GetSpecifierKey(Part).Len();
+		if (Index == 0)
+		{
+			return false;
+		}
+		while (Index < Part.Len() && TypePasteUtils::IsSpaceChar(Part[Index]))
+		{
+			++Index;
+		}
+		if (Index >= Part.Len() || Part[Index] != TEXT('='))
+		{
+			return false;
+		}
+		++Index;
+		while (Index < Part.Len() && TypePasteUtils::IsSpaceChar(Part[Index]))
+		{
+			++Index;
+		}
+		if (Index >= Part.Len() || Part[Index] != TEXT('(') || Part[Part.Len() - 1] != TEXT(')'))
+		{
+			return false;
+		}
+		OutInnerStart = Index + 1;
+		OutInnerEnd = Part.Len() - 1;
+		return true;
+	}
+
+	static void AddCount(TArray<FString>& Keys, TArray<int32>& Counts, const FString& Key)
+	{
+		for (int32 Index = 0; Index < Keys.Num(); ++Index)
+		{
+			if (Keys[Index].Equals(Key, ESearchCase::IgnoreCase))
+			{
+				++Counts[Index];
+				return;
+			}
+		}
+		Keys.Add(Key);
+		Counts.Add(1);
+	}
+}
+
+FString TypePasteUtils::RemoveNonAsciiSpecifiers(const FString& Specifiers, TArray<FString>& OutRemovedKeys)
+{
+	using namespace TypePasteUtilsPrivate;
+
+	if (IsAsciiText(Specifiers))
+	{
+		return Specifiers;
+	}
+
+	TArray<FString> Kept;
+	for (const FString& Part : SplitTopLevelSpecifiers(Specifiers))
+	{
+		if (IsAsciiText(Part))
+		{
+			Kept.Add(Part);
+			continue;
+		}
+
+		int32 InnerStart = 0;
+		int32 InnerEnd = 0;
+		if (FindNestedList(Part, InnerStart, InnerEnd))
+		{
+			const FString Inner = RemoveNonAsciiSpecifiers(Part.Mid(InnerStart, InnerEnd - InnerStart), OutRemovedKeys);
+			if (!Inner.TrimStartAndEnd().IsEmpty())
+			{
+				Kept.Add(GetSpecifierKey(Part) + TEXT(" = (") + Inner + TEXT(")"));
+			}
+			continue;
+		}
+
+		const FString Key = GetSpecifierKey(Part);
+		OutRemovedKeys.Add(Key.IsEmpty() ? FString(TEXT("?")) : Key);
+	}
+	return FString::Join(Kept, TEXT(", "));
+}
+
+void TypePasteUtils::EnforceEnglishOnly(FTPParseResult& Result)
+{
+	using namespace TypePasteUtilsPrivate;
+
+	int32 NumComments = 0;
+	TArray<FString> RemovedKeys;
+	TArray<int32> RemovedKeyCounts;
+	TArray<FTPMessage> Details;
+
+	auto CleanComment = [&NumComments](FString& Comment)
+	{
+		if (!Comment.IsEmpty() && !IsAsciiText(Comment))
+		{
+			Comment.Reset();
+			++NumComments;
+		}
+	};
+	auto CleanSpecifiers = [&RemovedKeys, &RemovedKeyCounts](FString& Specifiers) -> TArray<FString>
+	{
+		TArray<FString> Keys;
+		const FString Cleaned = RemoveNonAsciiSpecifiers(Specifiers, Keys);
+		if (Keys.Num() > 0)
+		{
+			Specifiers = Cleaned;
+			for (const FString& Key : Keys)
+			{
+				AddCount(RemovedKeys, RemovedKeyCounts, Key);
+			}
+		}
+		return Keys;
+	};
+
+	for (FTPEnumDef& Enum : Result.Enums)
+	{
+		CleanComment(Enum.Comment);
+		CleanSpecifiers(Enum.MacroSpecifiers);
+		for (FTPEnumEntry& Entry : Enum.Entries)
+		{
+			CleanComment(Entry.Comment);
+			CleanSpecifiers(Entry.UMetaRaw);
+			if (!IsAsciiText(Entry.DisplayName))
+			{
+				Entry.DisplayName.Reset();
+			}
+		}
+	}
+
+	for (FTPStructDef& Struct : Result.Structs)
+	{
+		CleanComment(Struct.Comment);
+		CleanSpecifiers(Struct.MacroSpecifiers);
+
+		for (FTPStructMember& Member : Struct.Members)
+		{
+			CleanComment(Member.Comment);
+
+			const TArray<FString> Keys = CleanSpecifiers(Member.PropertySpecifiers);
+			if (Keys.Contains(FString(TEXT("Category"))))
+			{
+				// 카테고리가 빠지면 C++ 생성기의 기본 카테고리(구조체 이름)로 채운다
+				const FString Category = FString(TEXT("Category = \"")) + StripUnrealPrefix(Struct.Name) + TEXT("\"");
+				Member.PropertySpecifiers = Member.PropertySpecifiers.TrimStartAndEnd().IsEmpty()
+					? Category
+					: Member.PropertySpecifiers + TEXT(", ") + Category;
+			}
+
+			if (!IsAsciiText(Member.InitText) || !IsAsciiText(Member.DefaultExpr))
+			{
+				Details.Add(FTPMessage(ETPSeverity::Warning, Struct.Name + TEXT("::") + Member.Name
+					+ TEXT(" 의 기본값에 영어가 아닌 문자가 있어 기본값을 뺐습니다.")));
+				Member.InitText.Reset();
+				Member.DefaultExpr.Reset();
+			}
+		}
+
+		TArray<FTPStructItem> KeptItems;
+		for (FTPStructItem& Item : Struct.Items)
+		{
+			CleanComment(Item.Comment);
+			if (Item.Kind == ETPStructItemKind::Raw && !IsAsciiText(Item.RawText))
+			{
+				Details.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("구조체 '")) + Struct.Name
+					+ TEXT("' 의 해석하지 않은 구문에 영어가 아닌 문자가 있어 뺐습니다: ") + CollapseWhitespace(Item.RawText).Left(60)));
+				continue;
+			}
+			KeptItems.Add(Item);
+		}
+		Struct.Items = KeptItems;
+	}
+
+	if (NumComments == 0 && RemovedKeys.Num() == 0 && Details.Num() == 0)
+	{
+		return;
+	}
+
+	TArray<FString> Parts;
+	if (NumComments > 0)
+	{
+		Parts.Add(FString(TEXT("주석 ")) + FString::FromInt(NumComments) + TEXT("개"));
+	}
+	for (int32 Index = 0; Index < RemovedKeys.Num(); ++Index)
+	{
+		Parts.Add(RemovedKeys[Index] + TEXT(" ") + FString::FromInt(RemovedKeyCounts[Index]) + TEXT("개"));
+	}
+	FString Summary = TEXT("생성 결과는 영어만 씁니다. 영어가 아닌 텍스트를 뺐습니다");
+	if (Parts.Num() > 0)
+	{
+		Summary += TEXT(": ");
+		Summary += FString::Join(Parts, TEXT(", "));
+	}
+	Summary += TEXT(". AI 에게 영어로 답하도록 요청하세요 ([AI 요청 프롬프트 복사] 사용).");
+	Result.AddWarning(Summary);
+	for (const FTPMessage& Detail : Details)
+	{
+		Result.Messages.Add(Detail);
+	}
+}
