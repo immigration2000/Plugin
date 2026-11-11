@@ -1,4 +1,4 @@
-﻿// TypePaste - AI 에게 설계를 요청할 때 붙여 쓰는 프롬프트 (TypePaste 가 잘 읽는 형식으로 답하도록 유도)
+﻿// TypePaste - prompt to give the AI when asking for a design (so it answers in a format TypePaste reads well)
 
 #pragma once
 
@@ -35,26 +35,26 @@ namespace TypePastePrompt
 	inline const TCHAR* GetHelpText()
 	{
 		return TEXT(
-			"사용 방법\n"
+			"How to use\n"
 			"\n"
-			"1) [AI 요청 프롬프트 복사] 를 누르고 AI(Claude, ChatGPT 등)에게 붙여넣어 설계를 요청합니다.\n"
-			"   (프롬프트 없이 평소처럼 물어본 답변도 대부분 그대로 읽을 수 있습니다)\n"
-			"2) AI 답변을 왼쪽 칸에 붙여넣습니다. 코드 블록만 복사해도 되고, 설명이 섞인 답변 전체를 붙여넣어도 됩니다.\n"
-			"3) 아래에서 생성 대상을 고릅니다.\n"
-			"   - 블루프린트 에셋: 콘텐츠 브라우저에 열거형(UserDefinedEnum)/구조체(UserDefinedStruct) 에셋 생성\n"
-			"   - C++ 헤더: 프로젝트 모듈 소스 폴더에 UENUM/USTRUCT 헤더(.h) 생성\n"
-			"4) 이 미리보기를 확인한 뒤 [생성] 을 누릅니다.\n"
+			"1) Press [Copy AI Prompt] and paste it to an AI (Claude, ChatGPT ...) to request a design.\n"
+			"   (Most answers to a normal question without the prompt can be read as well)\n"
+			"2) Paste the AI answer into the left box. The code block alone or the whole answer with prose both work.\n"
+			"3) Choose what to generate below.\n"
+			"   - Blueprint assets: enum (UserDefinedEnum) / struct (UserDefinedStruct) assets in the Content Browser\n"
+			"   - C++ headers: UENUM/USTRUCT headers (.h) in a project module's source folder\n"
+			"4) Check this preview, then press the Create button.\n"
 			"\n"
-			"읽을 수 있는 것\n"
-			"- UENUM / enum class / enum, USTRUCT / struct (매크로가 없어도 인식)\n"
-			"- UMETA(DisplayName, Hidden, ToolTip), UPROPERTY(...), 기본값(= 10.f, { 5 }), // 와 /** */ 주석 → 툴팁\n"
-			"- 함수/생성자 등 해석할 수 없는 구문은 C++ 생성 시 원문 그대로 보존합니다\n"
+			"What can be read\n"
+			"- UENUM / enum class / enum, USTRUCT / struct (recognized without the macros too)\n"
+			"- UMETA(DisplayName, Hidden, ToolTip), UPROPERTY(...), default values (= 10.f, { 5 }), // and /** */ comments -> tooltips\n"
+			"- Statements that cannot be interpreted (functions, constructors ...) are kept verbatim in C++ output\n"
 			"\n"
-			"생성 결과는 영어만 씁니다\n"
-			"- 한글 등 영어가 아닌 주석·DisplayName·ToolTip·Category·기본값은 빼고 만듭니다 (미리보기에 경고로 표시)\n"
-			"- 프롬프트 복사 버튼으로 요청하면 AI 가 처음부터 영어로 답합니다\n"
+			"Generated output is English only\n"
+			"- Non-English comments, DisplayName, ToolTip, Category and default values are left out (shown as warnings in the preview)\n"
+			"- With the [Copy AI Prompt] request, the AI answers in English from the start\n"
 			"\n"
-			"C++ 헤더를 만든 뒤에는 [빌드 후 다시 열기] 로 에디터를 닫고 빌드한 다음 프로젝트를 다시 엽니다 (솔루션 파일 필요 없음)\n"
+			"After creating C++ headers, [Build and Reopen] closes the editor, builds, and opens the project again (no solution file needed)\n"
 		);
 	}
 }

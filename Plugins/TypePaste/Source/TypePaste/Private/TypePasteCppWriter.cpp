@@ -1,4 +1,4 @@
-﻿// TypePaste - C++ 헤더 생성기 구현
+﻿// TypePaste - C++ header generator implementation
 
 #include "TypePasteCppWriter.h"
 
@@ -34,7 +34,7 @@ namespace TypePasteCppWriterPrivate
 			Lines.Add(Line);
 		}
 
-		/** 빈 줄 하나 (연속 빈 줄 방지) */
+		/** One blank line (no consecutive blank lines) */
 		void Blank()
 		{
 			if (Lines.Num() > 0 && !Lines.Last().IsEmpty())
@@ -70,7 +70,7 @@ namespace TypePasteCppWriterPrivate
 		TArray<FString> Lines;
 	};
 
-	/** CoreMinimal.h 만으로 쓸 수 있는 타입 */
+	/** Types usable with CoreMinimal.h alone */
 	static bool IsCoreMinimalType(const FString& Name)
 	{
 		static const TCHAR* Names[] =
@@ -94,7 +94,7 @@ namespace TypePasteCppWriterPrivate
 		return false;
 	}
 
-	/** 자주 쓰는 타입의 include 경로와 필요한 모듈 */
+	/** Include paths and required modules of commonly used types */
 	static bool FindKnownInclude(const FString& Name, FString& OutInclude, FString& OutModule)
 	{
 		struct FEntry
@@ -153,7 +153,7 @@ namespace TypePasteCppWriterPrivate
 		}
 	}
 
-	/** UTexture2D* → true (UObject 계열 원시 포인터) */
+	/** UTexture2D* -> true (raw pointer to a UObject type) */
 	static bool IsRawObjectPointer(const FTPTypeRef& Type)
 	{
 		if (Type.PointerDepth != 1 || Type.Args.Num() > 0 || Type.Name.Len() < 2)
@@ -171,7 +171,7 @@ namespace TypePasteCppWriterPrivate
 			|| Name.Equals(TEXT("TMap"), ESearchCase::CaseSensitive);
 	}
 
-	/** TArray<TArray<int32>>, TMap<FName, TArray<int32>> 처럼 컨테이너 안에 컨테이너 */
+	/** A container inside a container, such as TArray<TArray<int32>>, TMap<FName, TArray<int32>> */
 	static bool IsNestedContainer(const FTPTypeRef& Type)
 	{
 		if (!IsContainerName(Type.Name))
@@ -188,7 +188,7 @@ namespace TypePasteCppWriterPrivate
 		return false;
 	}
 
-	/** 블루프린트가 지원하지 않는 정수 타입 */
+	/** Integer types Blueprints do not support */
 	static bool IsBlueprintUnsupportedInt(const FTPTypeRef& Type)
 	{
 		if (Type.Args.Num() > 0 || Type.PointerDepth > 0)
@@ -236,7 +236,7 @@ namespace TypePasteCppWriterPrivate
 		Out.Add(Indent + TEXT(" */"));
 	}
 
-	/** 원문 구문을 들여쓰기만 맞춰 붙인다 */
+	/** Appends a raw statement, only fixing indentation */
 	static void AppendRaw(FLineBuilder& Out, const FString& RawText)
 	{
 		TArray<FString> Lines;
@@ -319,8 +319,8 @@ namespace TypePasteCppWriterPrivate
 	}
 
 	/**
-	 * UHT 는 바로 위 주석을 ToolTip 메타데이터로 쓰므로, ToolTip 지정자가 따로 있는데 주석까지 붙이면
-	 * "Metadata key 'ToolTip' first seen with value A then B" 오류가 난다. ToolTip 이 있으면 주석은 쓰지 않는다.
+	 * UHT uses the comment directly above as ToolTip metadata, so a comment plus a separate ToolTip specifier
+	 * fails with "Metadata key 'ToolTip' first seen with value A then B". When there is a ToolTip, the comment is not written.
 	 */
 	static void AddDocCommentUnlessToolTip(FLineBuilder& Out, const FString& Indent, const FString& Comment, const FString& Specifiers,
 		const FString& Label, const FWriteContext& Ctx)
@@ -334,7 +334,7 @@ namespace TypePasteCppWriterPrivate
 		if (!ToolTip.Equals(Comment, ESearchCase::CaseSensitive))
 		{
 			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, Label
-				+ TEXT(" 에 ToolTip 지정자가 있어 주석은 넣지 않았습니다. (둘 다 있으면 UHT 가 ToolTip 중복 오류를 냄)"));
+				+ TEXT(" has a ToolTip specifier, so the comment was not written. (Having both makes UHT report a duplicate ToolTip)"));
 		}
 	}
 
@@ -352,12 +352,12 @@ namespace TypePasteCppWriterPrivate
 		}
 		else if (!Underlying.Equals(TEXT("uint8"), ESearchCase::CaseSensitive) && HasSpecifierFlag(Specifiers, TEXT("BlueprintType")))
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("열거형 '")) + Def.Name
-				+ TEXT("' 은 BlueprintType 인데 기반 타입이 uint8 이 아닙니다. UHT 에서 오류가 날 수 있습니다."));
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("Enum '")) + Def.Name
+				+ TEXT("' is BlueprintType but its underlying type is not uint8. UHT may report an error."));
 		}
 		if (!Def.bScoped)
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("열거형 '")) + Def.Name + TEXT("' 을 enum class 로 바꿔 생성합니다."));
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("Enum '")) + Def.Name + TEXT("' is generated as an enum class."));
 		}
 
 		Out.Add(FString(TEXT("enum class ")) + Def.Name + TEXT(" : ") + Underlying);
@@ -387,8 +387,8 @@ namespace TypePasteCppWriterPrivate
 	{
 		if (!Def.Name.StartsWith(TEXT("F"), ESearchCase::CaseSensitive))
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("구조체 '")) + Def.Name
-				+ TEXT("' 의 이름이 F 로 시작하지 않습니다. USTRUCT 는 F 접두사가 필요해 UHT 오류가 납니다."));
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("Struct '")) + Def.Name
+				+ TEXT("' does not start with F. USTRUCT names need the F prefix, otherwise UHT fails."));
 		}
 
 		const FString Specifiers = Def.bHadMacro ? Def.MacroSpecifiers : FString(TEXT("BlueprintType"));
@@ -426,10 +426,10 @@ namespace TypePasteCppWriterPrivate
 				continue;
 			}
 
-			// 출력용 사본 (아래에서 타입을 다듬는다)
+			// Copy for output (the type is adjusted below)
 			FTPStructMember Member = Def.Members[Item.MemberIndex];
 
-			// TEnumAsByte<EFoo> 에서 EFoo 가 이번에 만드는 enum class 라면 그냥 EFoo 로 쓴다
+			// If EFoo in TEnumAsByte<EFoo> is an enum class created here, write just EFoo
 			if (Member.Type.Name.Equals(TEXT("TEnumAsByte"), ESearchCase::CaseSensitive) && Member.Type.Args.Num() == 1
 				&& Ctx.Parsed.FindEnum(Member.Type.Args[0].GetCleanName()) != nullptr)
 			{
@@ -456,11 +456,11 @@ namespace TypePasteCppWriterPrivate
 				if (bNestedContainer)
 				{
 					AddMessageUnique(Ctx.Messages, ETPSeverity::Info, MemberLabel
-						+ TEXT(" 는 중첩 컨테이너라 리플렉션을 지원하지 않아 UPROPERTY 를 붙이지 않았습니다."));
+						+ TEXT(" is a nested container, which reflection does not support, so no UPROPERTY was added."));
 				}
 				else
 				{
-					// 블루프린트에 노출할 수 없는 타입은 BlueprintReadWrite 없이 붙인다
+					// Types that cannot be exposed to Blueprints get it without BlueprintReadWrite
 					const bool bBlueprintCompatible = !bUnsupportedInt && Member.ArrayDim.IsEmpty();
 					Specs = bBlueprintCompatible
 						? FString(TEXT("EditAnywhere, BlueprintReadWrite, Category = \"")) + Category + TEXT("\"")
@@ -473,11 +473,11 @@ namespace TypePasteCppWriterPrivate
 				Out.Add(FString(TEXT("\tUPROPERTY(")) + Specs + TEXT(")"));
 			}
 
-			// UHT 가 거부하는 조합 경고
+			// Warn about combinations UHT rejects
 			if (bHasProperty && bNestedContainer)
 			{
 				AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, MemberLabel
-					+ TEXT(" 는 중첩 컨테이너(TArray<TArray<>> 등)라 UPROPERTY 로 쓸 수 없습니다. 안쪽을 구조체로 감싸 주세요."));
+					+ TEXT(" is a nested container (TArray<TArray<>> etc.) and cannot be a UPROPERTY. Wrap the inner one in a struct."));
 			}
 			const bool bBlueprintVisible = bHasProperty
 				&& (HasSpecifierFlag(Specs, TEXT("BlueprintReadWrite")) || HasSpecifierFlag(Specs, TEXT("BlueprintReadOnly")));
@@ -485,13 +485,13 @@ namespace TypePasteCppWriterPrivate
 			{
 				if (bUnsupportedInt)
 				{
-					AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, MemberLabel + TEXT(" 의 타입 '") + Member.Type.GetCleanName()
-						+ TEXT("' 은 블루프린트에 노출할 수 없습니다. int32/int64/uint8 로 바꾸는 것을 권장합니다."));
+					AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, MemberLabel + TEXT(": type '") + Member.Type.GetCleanName()
+						+ TEXT("' cannot be exposed to Blueprints. Use int32/int64/uint8 instead."));
 				}
 				if (!Member.ArrayDim.IsEmpty())
 				{
 					AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, MemberLabel
-						+ TEXT(" 는 고정 크기 배열이라 블루프린트에 노출할 수 없습니다. TArray 를 권장합니다."));
+						+ TEXT(" is a fixed-size array and cannot be exposed to Blueprints. Use TArray instead."));
 				}
 			}
 
@@ -533,17 +533,17 @@ namespace TypePasteCppWriterPrivate
 
 		if (NumUnwrappedEnums > 0)
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("구조체 '")) + Def.Name
-				+ TEXT("' 의 TEnumAsByte<열거형> 을 열거형 타입으로 바꿨습니다. (enum class 에는 TEnumAsByte 가 필요 없음)"));
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("Struct '")) + Def.Name
+				+ TEXT("': replaced TEnumAsByte<Enum> with the enum type. (enum class does not need TEnumAsByte)"));
 		}
 		if (NumConvertedPointers > 0)
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("구조체 '")) + Def.Name + TEXT("' 의 원시 포인터 ")
-				+ FString::FromInt(NumConvertedPointers) + TEXT("개를 TObjectPtr<> 로 바꿨습니다. (UE5 권장 방식)"));
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("Struct '")) + Def.Name + TEXT("': converted ")
+				+ FString::FromInt(NumConvertedPointers) + TEXT(" raw pointer(s) to TObjectPtr<>. (Recommended in UE5)"));
 		}
 	}
 
-	/** 구조체들이 쓰는 외부 타입을 모아 include / 전방 선언 목록을 만든다 */
+	/** Collects the external types the structs use and builds the include / forward declaration lists */
 	static void CollectDependencies(const TArray<const FTPStructDef*>& Structs, const FString& CurrentFile,
 		const TMap<FString, FString>& LocalTypeFiles, const FWriteContext& Ctx,
 		TArray<FString>& OutIncludes, TArray<FString>& OutForwardDecls)
@@ -619,7 +619,7 @@ namespace TypePasteCppWriterPrivate
 				continue;
 			}
 			AddMessageUnique(Ctx.Messages, ETPSeverity::Info, FString(TEXT("'")) + Name
-				+ TEXT("' 타입이 정의된 헤더를 찾지 못했습니다. 컴파일 오류가 나면 #include 를 직접 추가하세요."));
+				+ TEXT("': could not find the header that defines this type. Add the #include yourself if it does not compile."));
 		}
 
 		for (const FString& Name : ByPointer)
@@ -636,7 +636,7 @@ namespace TypePasteCppWriterPrivate
 
 		if (ModuleHints.Num() > 0)
 		{
-			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("모듈의 Build.cs 에 다음 의존 모듈이 필요할 수 있습니다: "))
+			AddMessageUnique(Ctx.Messages, ETPSeverity::Warning, FString(TEXT("The module's Build.cs may need these dependency modules: "))
 				+ FString::Join(ModuleHints, TEXT(", ")));
 		}
 	}
@@ -669,13 +669,13 @@ namespace TypePasteCppWriterPrivate
 		return Out.Join(Options.LineEnding);
 	}
 
-	/** 마지막 안전장치: 생성된 헤더는 ASCII 만 (D16). 남아 있으면 오류로 알려 내보내기를 막는다 */
+	/** Last safety net: generated headers are ASCII only (D16). Anything left is reported as an error, which blocks the export */
 	static void CheckAsciiOnly(const FTPCppFile& File, TArray<FTPMessage>& Messages)
 	{
 		if (!IsAsciiText(File.Content))
 		{
 			AddMessageUnique(Messages, ETPSeverity::Error, File.FileName
-				+ TEXT(" 에 영어가 아닌 문자가 남아 있어 만들 수 없습니다. 입력에서 한글 등을 지우고 다시 시도해 주세요."));
+				+ TEXT(" still contains non-English characters and cannot be created. Remove Korean or other non-English text from the input and try again."));
 		}
 	}
 
@@ -683,8 +683,8 @@ namespace TypePasteCppWriterPrivate
 	{
 		if (CycleNames.Num() > 0)
 		{
-			AddMessageUnique(Messages, ETPSeverity::Error, FString(TEXT("구조체가 서로(또는 자기 자신을) 값으로 포함하고 있습니다: "))
-				+ FString::Join(CycleNames, TEXT(", ")) + TEXT(". 한쪽을 TArray 나 포인터로 바꿔 주세요."));
+			AddMessageUnique(Messages, ETPSeverity::Error, FString(TEXT("Structs contain each other (or themselves) by value: "))
+				+ FString::Join(CycleNames, TEXT(", ")) + TEXT(". Change one of them to a TArray or a pointer."));
 		}
 	}
 }
@@ -784,7 +784,7 @@ TArray<FTPCppFile> FTypePasteCppWriter::WritePerType(const FTPParseResult& Parse
 
 	FWriteContext Ctx{ Parsed, Options, TypeInfo, OutMessages };
 
-	// 타입 → 파일 이름 (접두사를 뺀 이름이 겹치면 C++ 이름 그대로 사용)
+	// Type -> file name (if names without prefix collide, the C++ name is used as is)
 	TMap<FString, FString> LocalTypeFiles;
 	TArray<FString> UsedFileNames;
 	auto AssignFile = [&LocalTypeFiles, &UsedFileNames](const FString& TypeName)

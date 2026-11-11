@@ -1,4 +1,4 @@
-﻿// TypePaste - 에디터 탭 UI
+﻿// TypePaste - editor tab UI
 
 #pragma once
 
@@ -26,7 +26,7 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
-	// UI 구성
+	// UI construction
 	TSharedRef<SWidget> BuildToolbar();
 	TSharedRef<SWidget> BuildTargetOptions();
 	TSharedRef<SWidget> BuildBlueprintOptions();
@@ -34,12 +34,12 @@ private:
 	TSharedRef<SWidget> MakePathPickerMenu();
 	static TSharedRef<SWidget> MakeRow(const FText& InLabel, const TSharedRef<SWidget>& InContent);
 
-	// 입력/미리보기
+	// Input/preview
 	void OnInputChanged(const FText& NewText);
 	void Reparse();
 	void RefreshPreview();
 
-	// 버튼
+	// Buttons
 	FReply OnCopyPromptClicked();
 	FReply OnPasteClicked();
 	FReply OnClearClicked();
@@ -48,14 +48,14 @@ private:
 	void StartBuildAndReopen();
 	void OnPathPicked(const FString& Path);
 
-	// 상태 표시
+	// Status display
 	FText GetSummaryText() const;
 	FSlateColor GetSummaryColor() const;
 	bool IsGenerateEnabled() const;
 	FText GetGenerateButtonText() const;
 	void ShowResult(const TArray<FTPMessage>& Messages, const FString& Headline, bool bSuccess);
 
-	// 옵션
+	// Options
 	FTPBlueprintOptions MakeBlueprintOptions() const;
 	FTPCppExportOptions MakeCppOptions() const;
 	void LoadSettings();
@@ -70,13 +70,13 @@ private:
 
 	ETPTargetMode Mode = ETPTargetMode::Blueprint;
 
-	// 블루프린트 옵션
+	// Blueprint options
 	FString PackagePath = TEXT("/Game/Types");
 	TArray<TSharedPtr<FString>> NamingOptions;
 	TSharedPtr<FString> SelectedNaming;
 	bool bSaveAssets = true;
 
-	// C++ 옵션
+	// C++ options
 	TArray<TSharedPtr<FString>> ModuleOptions;
 	TSharedPtr<FString> SelectedModule;
 	FString SubFolder = TEXT("Types");

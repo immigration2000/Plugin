@@ -1,9 +1,9 @@
-﻿// TypePaste - 데이터 모델 및 공용 유틸리티 구현
+﻿// TypePaste - data model and shared utility implementation
 
 #include "TypePasteTypes.h"
 
 // ---------------------------------------------------------------------------
-// 모델 멤버 함수
+// Model member functions
 // ---------------------------------------------------------------------------
 
 FString FTPTypeRef::GetCleanName() const
@@ -118,12 +118,12 @@ const FTPStructDef* FTPParseResult::FindStruct(const FString& Name) const
 }
 
 // ---------------------------------------------------------------------------
-// 유틸리티
+// Utilities
 // ---------------------------------------------------------------------------
 
 namespace TypePasteUtilsPrivate
 {
-	/** Spec[Index] 가 '"' 일 때, 닫는 따옴표 다음 인덱스를 돌려준다 */
+	/** When Spec[Index] is '"', returns the index after the closing quote */
 	static int32 SkipQuoted(const FString& Spec, int32 Index)
 	{
 		const int32 Len = Spec.Len();
@@ -135,7 +135,7 @@ namespace TypePasteUtilsPrivate
 		return FMath::Min(Index + 1, Len);
 	}
 
-	/** Spec[Index] 가 '"' 일 때 따옴표 안의 내용을 이스케이프 해제해서 돌려준다 */
+	/** When Spec[Index] is '"', returns the unescaped text inside the quotes */
 	static FString ReadQuoted(const FString& Spec, int32 Index)
 	{
 		const int32 Len = Spec.Len();
@@ -193,11 +193,11 @@ namespace TypePasteUtilsPrivate
 		return -1;
 	}
 
-	/** 정수 리터럴 → 10진수 문자열. 실패하면 false */
+	/** Integer literal -> decimal string. Returns false on failure */
 	static bool ParseIntegerLiteral(const FString& InExpr, int64& OutValue)
 	{
 		FString Expr = InExpr.TrimStartAndEnd();
-		// 접미사 제거 (u, U, l, L, ll ...)
+		// Strip suffixes (u, U, l, L, ll ...)
 		while (Expr.Len() > 0)
 		{
 			const TCHAR Last = Expr[Expr.Len() - 1];
@@ -254,13 +254,13 @@ namespace TypePasteUtilsPrivate
 		return true;
 	}
 
-	/** 실수 리터럴 정리. 실패하면 false */
+	/** Normalizes a floating-point literal. Returns false on failure */
 	static bool ParseRealLiteral(const FString& InExpr, FString& OutValue)
 	{
 		FString Expr = InExpr.TrimStartAndEnd();
 		if (Expr.EndsWith(TEXT("f")) || Expr.EndsWith(TEXT("F")))
 		{
-			// 16진수가 아닌 경우만 (실수 리터럴에 16진수는 쓰지 않는다고 가정)
+			// Only when it is not hexadecimal (assumes floating-point literals are never hex)
 			Expr.LeftChopInline(1);
 		}
 		Expr = Expr.Replace(TEXT("'"), TEXT(""));
@@ -317,7 +317,7 @@ namespace TypePasteUtilsPrivate
 		return true;
 	}
 
-	/** 식 안의 마지막 문자열 리터럴 내용을 돌려준다 */
+	/** Returns the content of the last string literal in the expression */
 	static bool FindLastStringLiteral(const FString& Expr, FString& OutValue)
 	{
 		bool bFound = false;
@@ -713,7 +713,7 @@ void TypePasteUtils::CollectTypeUsages(const FTPTypeRef& Type, TArray<FString>& 
 
 	if (Type.Args.Num() > 0)
 	{
-		// TArray, TSet, TMap, TEnumAsByte, TOptional ... → 인자는 값으로 쓰인다
+		// TArray, TSet, TMap, TEnumAsByte, TOptional ... -> arguments are used by value
 		for (const FTPTypeRef& Arg : Type.Args)
 		{
 			CollectTypeUsages(Arg, OutByValue, OutByPointer);
@@ -799,13 +799,13 @@ void TypePasteUtils::SortStructsByDependency(const FTPParseResult& Result, TArra
 				OutOrder.Add(StructIndex);
 				++NumPlaced;
 				bProgress = true;
-				break; // 원래 순서를 최대한 유지하기 위해 다시 처음부터
+				break; // start over to keep the original order as much as possible
 			}
 		}
 
 		if (!bProgress)
 		{
-			// 순환 참조: 남은 것들을 원래 순서대로 붙인다
+			// Dependency cycle: append the rest in their original order
 			for (int32 StructIndex = 0; StructIndex < Num; ++StructIndex)
 			{
 				if (!Placed[StructIndex])
@@ -850,7 +850,7 @@ bool TypePasteUtils::IsAsciiText(const FString& In)
 
 namespace TypePasteUtilsPrivate
 {
-	/** 따옴표·괄호 밖의 쉼표로 지정자 목록을 나눈다 (각 조각은 앞뒤 공백 제거) */
+	/** Splits a specifier list at commas outside quotes/parentheses (each part trimmed) */
 	static TArray<FString> SplitTopLevelSpecifiers(const FString& Specifiers)
 	{
 		TArray<FString> Parts;
@@ -894,7 +894,7 @@ namespace TypePasteUtilsPrivate
 		return NonEmpty;
 	}
 
-	/** 지정자 조각의 앞 식별자. 예) Category = "X" → Category */
+	/** Leading identifier of a specifier part. e.g. Category = "X" -> Category */
 	static FString GetSpecifierKey(const FString& Part)
 	{
 		int32 Index = 0;
@@ -905,7 +905,7 @@ namespace TypePasteUtilsPrivate
 		return Part.Left(Index);
 	}
 
-	/** Key = ( ... ) 형태면 괄호 안쪽 범위를 돌려준다 */
+	/** For the form Key = ( ... ), returns the range inside the parentheses */
 	static bool FindNestedList(const FString& Part, int32& OutInnerStart, int32& OutInnerEnd)
 	{
 		int32 Index = GetSpecifierKey(Part).Len();
@@ -1045,7 +1045,7 @@ void TypePasteUtils::EnforceEnglishOnly(FTPParseResult& Result)
 			const TArray<FString> Keys = CleanSpecifiers(Member.PropertySpecifiers);
 			if (Keys.Contains(FString(TEXT("Category"))))
 			{
-				// 카테고리가 빠지면 C++ 생성기의 기본 카테고리(구조체 이름)로 채운다
+				// If Category was removed, use the C++ generator's default category (the struct name)
 				const FString Category = FString(TEXT("Category = \"")) + StripUnrealPrefix(Struct.Name) + TEXT("\"");
 				Member.PropertySpecifiers = Member.PropertySpecifiers.TrimStartAndEnd().IsEmpty()
 					? Category
@@ -1055,7 +1055,7 @@ void TypePasteUtils::EnforceEnglishOnly(FTPParseResult& Result)
 			if (!IsAsciiText(Member.InitText) || !IsAsciiText(Member.DefaultExpr))
 			{
 				Details.Add(FTPMessage(ETPSeverity::Warning, Struct.Name + TEXT("::") + Member.Name
-					+ TEXT(" 의 기본값에 영어가 아닌 문자가 있어 기본값을 뺐습니다.")));
+					+ TEXT(": the default value contains non-English text, so it was removed.")));
 				Member.InitText.Reset();
 				Member.DefaultExpr.Reset();
 			}
@@ -1067,8 +1067,8 @@ void TypePasteUtils::EnforceEnglishOnly(FTPParseResult& Result)
 			CleanComment(Item.Comment);
 			if (Item.Kind == ETPStructItemKind::Raw && !IsAsciiText(Item.RawText))
 			{
-				Details.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("구조체 '")) + Struct.Name
-					+ TEXT("' 의 해석하지 않은 구문에 영어가 아닌 문자가 있어 뺐습니다: ") + CollapseWhitespace(Item.RawText).Left(60)));
+				Details.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("Struct '")) + Struct.Name
+					+ TEXT("': removed an unparsed statement that contains non-English text: ") + CollapseWhitespace(Item.RawText).Left(60)));
 				continue;
 			}
 			KeptItems.Add(Item);
@@ -1084,19 +1084,19 @@ void TypePasteUtils::EnforceEnglishOnly(FTPParseResult& Result)
 	TArray<FString> Parts;
 	if (NumComments > 0)
 	{
-		Parts.Add(FString(TEXT("주석 ")) + FString::FromInt(NumComments) + TEXT("개"));
+		Parts.Add(FString::FromInt(NumComments) + TEXT(" comment(s)"));
 	}
 	for (int32 Index = 0; Index < RemovedKeys.Num(); ++Index)
 	{
-		Parts.Add(RemovedKeys[Index] + TEXT(" ") + FString::FromInt(RemovedKeyCounts[Index]) + TEXT("개"));
+		Parts.Add(FString::FromInt(RemovedKeyCounts[Index]) + TEXT(" ") + RemovedKeys[Index]);
 	}
-	FString Summary = TEXT("생성 결과는 영어만 씁니다. 영어가 아닌 텍스트를 뺐습니다");
+	FString Summary = TEXT("Generated output is English only. Removed non-English text");
 	if (Parts.Num() > 0)
 	{
 		Summary += TEXT(": ");
 		Summary += FString::Join(Parts, TEXT(", "));
 	}
-	Summary += TEXT(". AI 에게 영어로 답하도록 요청하세요 ([AI 요청 프롬프트 복사] 사용).");
+	Summary += TEXT(". Ask the AI to answer in English (use [Copy AI Prompt]).");
 	Result.AddWarning(Summary);
 	for (const FTPMessage& Detail : Details)
 	{

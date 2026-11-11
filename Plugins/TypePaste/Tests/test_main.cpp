@@ -102,7 +102,7 @@ static std::string ReadFile(const char* Path)
 int main(int argc, char** argv)
 {
 #ifdef _WIN32
-	// Windows 텍스트 모드는 \n 을 \r\n 으로 바꿔 골든 비교가 깨지므로 바이트 그대로 출력
+	// Windows text mode turns \n into \r\n, which breaks the golden comparison, so write bytes as they are
 	_setmode(_fileno(stdout), _O_BINARY);
 #endif
 	for (int i = 1; i < argc; ++i)
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 		{ ETPPrimitiveKind::Int, L"1'000'000" }, { ETPPrimitiveKind::Int64, L"5000000000LL" }, { ETPPrimitiveKind::Byte, L"300" }, { ETPPrimitiveKind::Byte, L"255u" },
 		{ ETPPrimitiveKind::Bool, L"true" }, { ETPPrimitiveKind::Bool, L"1" }, { ETPPrimitiveKind::String, L"TEXT(\"Hello \\\"World\\\"\")" },
 		{ ETPPrimitiveKind::Name, L"NAME_None" }, { ETPPrimitiveKind::Name, L"FName(TEXT(\"Socket_R\"))" },
-		{ ETPPrimitiveKind::Text, L"NSLOCTEXT(\"Ns\", \"Key\", \"검\")" }, { ETPPrimitiveKind::Text, L"FText::GetEmpty()" }, { ETPPrimitiveKind::String, L"TEXT(\"\")" },
+		{ ETPPrimitiveKind::Text, L"NSLOCTEXT(\"Ns\", \"Key\", \"\uAC80\")" }, { ETPPrimitiveKind::Text, L"FText::GetEmpty()" }, { ETPPrimitiveKind::String, L"TEXT(\"\")" },
 	};
 	for (auto& C : Cases)
 	{

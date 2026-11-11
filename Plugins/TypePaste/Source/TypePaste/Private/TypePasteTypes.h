@@ -1,11 +1,11 @@
-﻿// TypePaste - AI가 추천한 UENUM/USTRUCT 코드를 붙여넣어 타입을 생성하는 에디터 플러그인
-// 파싱 결과를 담는 순수 데이터 모델 (에디터 API 의존 없음)
+﻿// TypePaste - editor plugin that creates types from pasted AI-suggested UENUM/USTRUCT code
+// Pure data model for parse results (no editor API dependency)
 
 #pragma once
 
 #include "CoreMinimal.h"
 
-/** 메시지 심각도 */
+/** Message severity */
 enum class ETPSeverity : uint8
 {
 	Info,
@@ -13,7 +13,7 @@ enum class ETPSeverity : uint8
 	Error
 };
 
-/** 분석/생성 과정에서 사용자에게 보여줄 메시지 */
+/** Message shown to the user during parsing/generation */
 struct FTPMessage
 {
 	ETPSeverity Severity = ETPSeverity::Info;
@@ -26,16 +26,16 @@ struct FTPMessage
 	}
 };
 
-/** 파싱된 타입 참조. 예) TArray<TObjectPtr<UTexture2D>> */
+/** Parsed type reference. e.g. TArray<TObjectPtr<UTexture2D>> */
 struct FTPTypeRef
 {
-	/** 타입 이름. 예) "TArray", "int32", "EWeaponType", "UTexture2D" */
+	/** Type name. e.g. "TArray", "int32", "EWeaponType", "UTexture2D" */
 	FString Name;
 
-	/** 템플릿 인자 */
+	/** Template arguments */
 	TArray<FTPTypeRef> Args;
 
-	/** '*' 개수 */
+	/** Number of '*' */
 	int32 PointerDepth = 0;
 
 	bool bReference = false;
@@ -43,82 +43,82 @@ struct FTPTypeRef
 
 	bool IsValid() const { return !Name.IsEmpty(); }
 
-	/** "EFoo::Type" 같은 구식 네임스페이스 열거형 표기를 정리한 이름 */
+	/** Name with old-style namespaced enum notation such as "EFoo::Type" cleaned up */
 	FString GetCleanName() const;
 
-	/** 사람이 읽을 수 있는 문자열. 예) "TArray<TObjectPtr<UTexture2D>>" */
+	/** Human-readable string. e.g. "TArray<TObjectPtr<UTexture2D>>" */
 	FString ToString() const;
 };
 
-/** 열거형 항목 */
+/** Enum entry */
 struct FTPEnumEntry
 {
 	FString Name;
-	/** "= 3" 의 "3". 없으면 빈 문자열 */
+	/** "3" of "= 3". Empty if none */
 	FString ValueExpr;
-	/** UMETA(...) 괄호 안 원문 */
+	/** Raw text inside UMETA(...) */
 	FString UMetaRaw;
-	/** UMETA DisplayName 값 */
+	/** UMETA DisplayName value */
 	FString DisplayName;
 	FString Comment;
 	/** UMETA(Hidden) */
 	bool bHidden = false;
 
-	/** 블루프린트에 표시할 이름: DisplayName 이 있으면 그것, 없으면 Name */
+	/** Name shown in Blueprints: DisplayName if present, otherwise Name */
 	FString GetBlueprintDisplayName() const { return DisplayName.IsEmpty() ? Name : DisplayName; }
 };
 
-/** 열거형 정의 */
+/** Enum definition */
 struct FTPEnumDef
 {
 	FString Name;
-	/** ": uint8" 의 "uint8". 없으면 빈 문자열 */
+	/** "uint8" of ": uint8". Empty if none */
 	FString UnderlyingType;
-	/** UENUM(...) 괄호 안 원문 */
+	/** Raw text inside UENUM(...) */
 	FString MacroSpecifiers;
 	bool bHadMacro = false;
-	/** enum class 여부 */
+	/** Whether it is an enum class */
 	bool bScoped = false;
 	FString Comment;
 	TArray<FTPEnumEntry> Entries;
 
-	/** 이름으로 항목 인덱스 찾기 (대소문자 구분) */
+	/** Finds an entry index by name (case-sensitive) */
 	int32 FindEntryIndex(const FString& EntryName) const;
 
-	/** Hidden 이 아닌 항목들 (블루프린트 생성 대상) */
+	/** Entries that are not Hidden (the ones created in Blueprints) */
 	TArray<int32> GetVisibleEntryIndices() const;
 };
 
-/** 구조체 멤버 변수 */
+/** Struct member variable */
 struct FTPStructMember
 {
 	FString Name;
 	FTPTypeRef Type;
-	/** 원문 타입 텍스트 (공백 정리됨). 예) "TArray<TObjectPtr<UTexture2D>>" */
+	/** Raw type text (whitespace normalized). e.g. "TArray<TObjectPtr<UTexture2D>>" */
 	FString TypeText;
-	/** UPROPERTY(...) 괄호 안 원문 */
+	/** Raw text inside UPROPERTY(...) */
 	FString PropertySpecifiers;
 	bool bHadUProperty = false;
-	/** 원문 초기화 구문. 예) "= 10.f" 또는 "{ 10 }" (없으면 빈 문자열) */
+	/** Raw initializer. e.g. "= 10.f" or "{ 10 }" (empty if none) */
 	FString InitText;
-	/** 초기값 식만. 예) "10.f" */
+	/** Initializer expression only. e.g. "10.f" */
 	FString DefaultExpr;
-	/** 고정 배열 차원. 예) "[4]" */
+	/** Fixed array dimension. e.g. "[4]" */
 	FString ArrayDim;
-	/** 비트필드 폭 (uint8 bFlag : 1 → 1) */
+	/** Bitfield width (uint8 bFlag : 1 -> 1) */
 	int32 BitfieldWidth = 0;
 	FString Comment;
 };
 
 enum class ETPStructItemKind : uint8
 {
-	/** 해석된 멤버 변수 */
+	/** Parsed member variable */
 	Member,
-	/** 해석하지 않고 원문 그대로 보존하는 구문 (함수, 생성자, static 등) */
+	/** Statement kept verbatim without parsing (functions, constructors, static members ...) */
 	Raw
 };
 
-/** 구조체 본문 항목 (원래 순서 보존용) */
+/** Struct body item (keeps the original order) */
 struct FTPStructItem
 {
 	ETPStructItemKind Kind = ETPStructItemKind::Member;
@@ -127,15 +127,15 @@ struct FTPStructItem
 	FString Comment;
 };
 
-/** 구조체 정의 */
+/** Struct definition */
 struct FTPStructDef
 {
 	FString Name;
-	/** 부모 타입 이름. 예) "FTableRowBase" */
+	/** Parent type name. e.g. "FTableRowBase" */
 	FString ParentName;
-	/** 부모 선언 원문. 예) "public FTableRowBase" */
+	/** Raw parent declaration. e.g. "public FTableRowBase" */
 	FString ParentText;
-	/** USTRUCT(...) 괄호 안 원문 */
+	/** Raw text inside USTRUCT(...) */
 	FString MacroSpecifiers;
 	bool bHadMacro = false;
 	FString Comment;
@@ -145,7 +145,7 @@ struct FTPStructDef
 	int32 NumRawItems() const;
 };
 
-/** 전체 파싱 결과 */
+/** Complete parse result */
 struct FTPParseResult
 {
 	TArray<FTPEnumDef> Enums;
@@ -163,7 +163,7 @@ struct FTPParseResult
 	void AddError(const FString& Text) { Messages.Add(FTPMessage(ETPSeverity::Error, Text)); }
 };
 
-/** 블루프린트 기본값 변환용 기본 타입 분류 */
+/** Primitive type category used to convert Blueprint default values */
 enum class ETPPrimitiveKind : uint8
 {
 	None,
@@ -177,77 +177,77 @@ enum class ETPPrimitiveKind : uint8
 	Text
 };
 
-/** 블루프린트 에셋 이름 규칙 */
+/** Blueprint asset naming rule */
 enum class ETPAssetNaming : uint8
 {
-	/** C++ 이름 그대로 (EWeaponType, FWeaponData) */
+	/** Keep the C++ name (EWeaponType, FWeaponData) */
 	KeepCppName,
 	/** E_WeaponType, S_WeaponData */
 	PrefixE_S_,
 	/** E_WeaponType, F_WeaponData */
 	PrefixE_F_,
-	/** 접두사 제거 (WeaponType, WeaponData) */
+	/** Strip the prefix (WeaponType, WeaponData) */
 	NoPrefix
 };
 
-/** 파서/생성기 공용 유틸리티 (순수 함수) */
+/** Utilities shared by the parser and generators (pure functions) */
 namespace TypePasteUtils
 {
-	/** ASCII 기준 문자 분류 (로캘에 영향받지 않도록 직접 구현) */
+	/** ASCII character classes (implemented by hand so the locale has no effect) */
 	bool IsSpaceChar(TCHAR C);
 	bool IsIdentStartChar(TCHAR C);
 	bool IsIdentChar(TCHAR C);
 	bool IsDigitChar(TCHAR C);
 
-	/** 공백(줄바꿈 포함) 연속을 한 칸으로 줄이고 앞뒤 공백 제거 */
+	/** Collapses whitespace runs (including newlines) to one space and trims both ends */
 	FString CollapseWhitespace(const FString& In);
 
-	/** 지정자 원문에서 Key = "Value" 값을 찾는다. 예) UMETA(DisplayName="근접") */
+	/** Finds the value of Key = "Value" in raw specifiers. e.g. UMETA(DisplayName="Melee") */
 	bool FindSpecifierValue(const FString& Specifiers, const FString& Key, FString& OutValue);
 
-	/** 지정자 원문에 단독 플래그가 있는지 (따옴표 안 제외, 대소문자 무시). 예) Hidden, Bitflags */
+	/** Whether the raw specifiers contain a standalone flag (outside quotes, case-insensitive). e.g. Hidden, Bitflags */
 	bool HasSpecifierFlag(const FString& Specifiers, const FString& Flag);
 
-	/** "EWeaponType::Melee" → "Melee" */
+	/** "EWeaponType::Melee" -> "Melee" */
 	FString StripScopeQualifier(const FString& In);
 
-	/** EWeaponType → WeaponType, FItemData → ItemData (두 번째 글자가 대문자일 때만 제거) */
+	/** EWeaponType -> WeaponType, FItemData -> ItemData (only stripped when the second letter is uppercase) */
 	FString StripUnrealPrefix(const FString& CppName);
 
-	/** 블루프린트 에셋 이름 만들기 */
+	/** Makes a Blueprint asset name */
 	FString MakeAssetName(const FString& CppName, bool bIsEnum, ETPAssetNaming Naming);
 
-	/** C++ 기본 타입 분류 (블루프린트 기본값 변환용) */
+	/** Classifies a C++ primitive type (for Blueprint default values) */
 	ETPPrimitiveKind GetPrimitiveKind(const FString& TypeName);
 
-	/** C++ 초기값 식을 블루프린트 기본값 문자열로 변환. 변환 불가하면 false */
+	/** Converts a C++ initializer expression to a Blueprint default value string. Returns false if it cannot be converted */
 	bool ConvertDefaultValue(ETPPrimitiveKind Kind, const FString& Expr, FString& OutValue);
 
-	/** 타입 참조에 등장하는 모든 이름 수집 (템플릿 인자 포함) */
+	/** Collects every name used in a type reference (including template arguments) */
 	void CollectTypeNames(const FTPTypeRef& Type, TArray<FString>& OutNames);
 
-	/** 값으로 포함되어 정의가 먼저 필요한 이름 / 포인터로만 쓰여 전방 선언이면 되는 이름 분리 */
+	/** Splits names used by value (definition needed first) from names used only through pointers (forward declaration is enough) */
 	void CollectTypeUsages(const FTPTypeRef& Type, TArray<FString>& OutByValue, TArray<FString>& OutByPointer);
 
-	/** 구조체를 의존 순서로 정렬 (값으로 포함하는 쪽이 뒤로). 순환이 있으면 OutCycleNames 에 기록 */
+	/** Sorts structs by dependency (a struct that contains another by value comes later). Cycles are written to OutCycleNames */
 	void SortStructsByDependency(const FTPParseResult& Result, TArray<int32>& OutOrder, TArray<FString>& OutCycleNames);
 
-	/** C++ 식별자로 유효한지 */
+	/** Whether the string is a valid C++ identifier */
 	bool IsValidIdentifier(const FString& In);
 
-	/** 모든 문자가 ASCII(0~127) 인지 */
+	/** Whether every character is ASCII (0-127) */
 	bool IsAsciiText(const FString& In);
 
 	/**
-	 * 지정자 목록에서 ASCII 가 아닌 문자가 들어 있는 항목을 뺀다. meta = (...) 안쪽도 같은 규칙으로 정리하고, 비면 meta 째로 뺀다.
-	 * 예) EditAnywhere, Category = "무기", meta = (ToolTip = "설명", ClampMin = "0") → EditAnywhere, meta = (ClampMin = "0")
-	 * 뺀 항목의 키 이름(Category, ToolTip ...)을 OutRemovedKeys 에 추가한다. 바뀐 것이 없으면 원문 그대로 돌려준다.
+	 * Removes specifiers whose text contains non-ASCII characters. The inside of meta = (...) follows the same rule; if it ends up empty, meta is removed too.
+	 * e.g. EditAnywhere, Category = "<non-ASCII>", meta = (ToolTip = "<non-ASCII>", ClampMin = "0") -> EditAnywhere, meta = (ClampMin = "0")
+	 * Adds the key names of the removed specifiers (Category, ToolTip ...) to OutRemovedKeys. Returns the input unchanged if nothing was removed.
 	 */
 	FString RemoveNonAsciiSpecifiers(const FString& Specifiers, TArray<FString>& OutRemovedKeys);
 
 	/**
-	 * 생성 결과(C++ 헤더, 블루프린트 에셋)는 영어만 쓴다 (DECISIONS D16).
-	 * 파싱 결과에서 ASCII 가 아닌 주석, 지정자 값(DisplayName/ToolTip/Category ...), 기본값, 원문 구문을 빼고 안내 메시지를 남긴다.
+	 * Generated output (C++ headers, Blueprint assets) is English only (DECISIONS D16).
+	 * Removes non-ASCII comments, specifier values (DisplayName/ToolTip/Category ...), default values and raw statements from the parse result and adds messages.
 	 */
 	void EnforceEnglishOnly(FTPParseResult& Result);
 }

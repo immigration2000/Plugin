@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# TypePaste 순수 로직(파서 / C++ 생성기) 테스트 — 언리얼 엔진 없이 실행
+# TypePaste pure-logic tests (parser / C++ generator) - runs without Unreal Engine
 #
-#   ./run_tests.sh              빌드 + 골든 비교 + 퍼징
-#   UPDATE=1 ./run_tests.sh     현재 출력으로 expected/ 갱신 (의도한 출력 변경일 때만)
-#   CXX=clang++ ./run_tests.sh  컴파일러 지정 (기본 g++)
+#   ./run_tests.sh              build + golden comparison + fuzzing
+#   UPDATE=1 ./run_tests.sh     overwrite expected/ with the current output (only for intended output changes)
+#   CXX=clang++ ./run_tests.sh  choose the compiler (default g++)
 #   FUZZ_ITERS=20000 ./run_tests.sh
 #
-# 에디터 API 를 쓰는 파일(BlueprintBuilder, CppExporter, Panel, Module)은 여기서 빌드하지 않는다.
+# Files that use editor APIs (BlueprintBuilder, CppExporter, Panel, Module) are not built here.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -33,7 +33,7 @@ for input in inputs/*.txt; do
 	elif diff -u "expected/$name.out" "build/$name.out" > "build/$name.diff"; then
 		echo "[ok] $name"
 	else
-		echo "[FAIL] $name  (차이: build/$name.diff)"
+		echo "[FAIL] $name  (difference: build/$name.diff)"
 		fail=1
 	fi
 done
@@ -42,7 +42,7 @@ echo "[fuzz] ${FUZZ_ITERS:-5000} iterations"
 ./build/fuzz inputs/*.txt
 
 if [[ "$fail" != "0" ]]; then
-	echo "골든 출력과 다릅니다. 의도한 변경이면 UPDATE=1 로 갱신하세요."
+	echo "Output differs from the golden files. If the change is intended, update them with UPDATE=1."
 	exit 1
 fi
-echo "모든 테스트 통과"
+echo "All tests passed"

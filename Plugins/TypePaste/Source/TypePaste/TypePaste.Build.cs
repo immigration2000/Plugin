@@ -1,4 +1,4 @@
-﻿// TypePaste - 에디터 전용 모듈
+﻿// TypePaste - editor-only module
 
 using UnrealBuildTool;
 
@@ -17,18 +17,18 @@ public class TypePaste : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"ApplicationCore",        // 클립보드
-			"AssetRegistry",          // 기존 블루프린트 열거형/구조체 검색
-			"AssetTools",             // 에셋 생성
-			"BlueprintGraph",         // UEdGraphSchema_K2 (핀 타입)
-			"ContentBrowser",         // 경로 선택기, 생성 후 위치 표시
+			"ApplicationCore",        // clipboard
+			"AssetRegistry",          // search existing Blueprint enums/structs
+			"AssetTools",             // asset creation
+			"BlueprintGraph",         // UEdGraphSchema_K2 (pin types)
+			"ContentBrowser",         // path picker, show created assets
 			"InputCore",
-			"MainFrame",              // 빌드 후 다시 열기: 에디터 종료 요청
-			"Projects",               // 프로젝트 모듈 목록, 플러그인 폴더(빌드 스크립트) 찾기
+			"MainFrame",              // Build and Reopen: request editor close
+			"Projects",               // project module list, plugin folder (build script)
 			"Slate",
 			"SlateCore",
-			"UnrealEd",               // FEnumEditorUtils, FStructureEditorUtils, 팩토리
-			"WorkspaceMenuStructure", // Tools 메뉴 등록
+			"UnrealEd",               // FEnumEditorUtils, FStructureEditorUtils, factories
+			"WorkspaceMenuStructure", // Tools menu registration
 		});
 	}
 }

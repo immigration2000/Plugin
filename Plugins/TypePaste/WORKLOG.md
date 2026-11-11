@@ -70,3 +70,25 @@ C++ 생성 후 에디터 닫고 배치 파일로 빌드하고 바로 프로젝�
 - **확인 못 함**: 에디터 안에서 버튼/확인 창 → 에디터 종료 → 다시 열기 전체 흐름, Build.bat 의 에디터 실행(`-noopen` 없이)
 
 **다음**: TASKS.md P0 수동 검증 (특히 빌드 후 다시 열기)
+
+## 2026-11-11 — Claude Code (Opus 5.5) — 플러그인 UI·주석 영어화
+
+**요청**: 플러그인 자체의 한글 UI 문구와 주석도 영어로 (D20).
+
+**한 일**
+- 소스 22개 파일의 한글 약 475줄을 줄 단위로 영어로 바꿈 (주석, LOCTEXT, 메시지, 프롬프트 도움말, Build.cs, 테스트 스크립트, .gitattributes/.gitignore)
+  - 주요 UI 이름: Copy AI Prompt / Paste from Clipboard / Clear / Generate / Blueprint assets / C++ headers /
+    Create Blueprint Assets / Create C++ Headers / Build and Reopen, Tools 메뉴는 "TypePaste"
+  - 미리보기의 `✗ → — ■` 기호도 ASCII(`[x] -> - *`)로
+- 테스트 데이터의 한글(test_main, fuzz)은 `\uXXXX` 이스케이프로 바꿔 소스는 BOM 외 ASCII 만
+- `Scripts/Build.bat`: 실행 중 에디터 확인을 "이 프로젝트를 연 에디터" 로 좁힘 (다른 프로젝트/엔진 버전 에디터는 무시).
+  이 PC 에서 UE 5.8 의 다른 프로젝트가 열려 있어 경고가 잘못 뜨던 것을 발견해 수정
+- README/TASKS/CLAUDE.md 의 UI 이름을 영어 이름으로, CLAUDE.md 코딩 규칙을 "소스는 영어" 로, DECISIONS D13 갱신·D20 추가
+
+**테스트**
+- `Tests/run_tests.bat`: 골든 6종 갱신 — 메시지 줄만 1:1 로 바뀌었고 지워진 줄은 전부 한글 줄임을 확인. 퍼징 20,000회 통과
+- `PluginEditor` 강제 유니티 빌드 성공, 루트 `Build.bat -noopen`(적응형, 바뀐 8개 파일 개별 컴파일) 성공
+- 가짜 `UnrealEditor.exe`(명령줄에 Plugin.uproject) 로 실행 중 감지 확인, 다른 프로젝트 에디터는 무시하는 것 확인
+- **확인 못 함**: 에디터 안에서 바뀐 UI 표시, 빌드 후 다시 열기 전체 흐름
+
+**다음**: TASKS.md P0 수동 검증

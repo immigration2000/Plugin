@@ -1,4 +1,4 @@
-﻿// TypePaste - AI 가 추천한 UENUM/USTRUCT 코드를 붙여넣어 블루프린트 에셋이나 C++ 헤더로 만드는 에디터 플러그인
+﻿// TypePaste - editor plugin that turns pasted AI-suggested UENUM/USTRUCT code into Blueprint assets or C++ headers
 
 #pragma once
 
@@ -16,7 +16,7 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	/** Tools 메뉴에 등록되는 탭 이름 */
+	/** Name of the tab registered in the Tools menu */
 	static const FName TabName;
 
 private:

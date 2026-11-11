@@ -1,4 +1,4 @@
-﻿// TypePaste - 파서 구현
+﻿// TypePaste - parser implementation
 
 #include "TypePasteParser.h"
 
@@ -20,18 +20,18 @@ namespace TypePasteParserPrivate
 	{
 		ETokenType Type = ETokenType::Other;
 		FString Text;
-		/** 원문 시작 오프셋 */
+		/** Start offset in the source text */
 		int32 Start = 0;
-		/** 원문 끝 오프셋 (미포함) */
+		/** End offset in the source text (exclusive) */
 		int32 End = 0;
 		int32 Line = 0;
-		/** 이 토큰 앞 줄들에 있던 주석 */
+		/** Comments on the lines before this token */
 		FString LeadingComment;
-		/** 이 토큰과 같은 줄 뒤에 있던 주석 */
+		/** Comment after this token on the same line */
 		FString TrailingComment;
 	};
 
-	/** "// ========" 같은 장식용 주석인지 */
+	/** Whether it is a decorative comment such as "// ========" */
 	static bool IsDecorativeComment(const FString& Text)
 	{
 		for (int32 Index = 0; Index < Text.Len(); ++Index)
@@ -45,7 +45,7 @@ namespace TypePasteParserPrivate
 		return true;
 	}
 
-	/** 주석 기호를 걷어내고 내용만 남긴다 */
+	/** Strips the comment markers and keeps only the text */
 	static FString CleanCommentText(const FString& Raw)
 	{
 		FString Body = Raw;
@@ -71,7 +71,7 @@ namespace TypePasteParserPrivate
 		}
 		if (Body.StartsWith(TEXT("<")))
 		{
-			// Doxygen 의 뒤쪽 주석 표기 (//!< , /**< )
+			// Doxygen trailing comment markers (//!< , /**< )
 			Body.RightChopInline(1);
 		}
 
@@ -153,7 +153,7 @@ namespace TypePasteParserPrivate
 				continue;
 			}
 
-			// 마크다운 코드 펜스(```cpp) 나 인라인 코드 표시: 줄 끝까지 무시
+			// Markdown code fence (```cpp) or inline code marker: ignore until the end of the line
 			if (C == TEXT('`'))
 			{
 				while (Pos < Len && Source[Pos] != TEXT('\n'))
@@ -163,7 +163,7 @@ namespace TypePasteParserPrivate
 				continue;
 			}
 
-			// 전처리기 지시문 (#include, #pragma) 및 마크다운 제목(#)
+			// Preprocessor directives (#include, #pragma) and markdown headings (#)
 			if (C == TEXT('#') && bAtLineStart)
 			{
 				while (Pos < Len && Source[Pos] != TEXT('\n'))
@@ -179,7 +179,7 @@ namespace TypePasteParserPrivate
 				continue;
 			}
 
-			// 한 줄 주석
+			// Line comment
 			if (C == TEXT('/') && Pos + 1 < Len && Source[Pos + 1] == TEXT('/'))
 			{
 				const int32 Start = Pos;
@@ -191,7 +191,7 @@ namespace TypePasteParserPrivate
 				continue;
 			}
 
-			// 블록 주석
+			// Block comment
 			if (C == TEXT('/') && Pos + 1 < Len && Source[Pos + 1] == TEXT('*'))
 			{
 				const int32 Start = Pos;
@@ -265,7 +265,7 @@ namespace TypePasteParserPrivate
 			}
 			else if (C == TEXT('\''))
 			{
-				// 'a' 또는 '\n' 형태만 문자 리터럴로 본다 (설명 문장의 아포스트로피는 무시)
+				// Only 'a' or '\n' forms count as character literals (apostrophes in prose are ignored)
 				int32 Close = INDEX_NONE;
 				if (Pos + 2 < Len && Source[Pos + 1] != TEXT('\\') && Source[Pos + 2] == TEXT('\''))
 				{
@@ -376,7 +376,7 @@ namespace TypePasteParserPrivate
 		int32 Pos = 0;
 
 		// ------------------------------------------------------------------
-		// 토큰 헬퍼
+		// Token helpers
 		// ------------------------------------------------------------------
 
 		bool IsIdentAt(int32 Index) const
@@ -404,7 +404,7 @@ namespace TypePasteParserPrivate
 			return IsSymbolAt(Index, TEXT(")")) || IsSymbolAt(Index, TEXT("}")) || IsSymbolAt(Index, TEXT("]"));
 		}
 
-		/** 여는 괄호 ( { [ 의 짝 인덱스. 없으면 INDEX_NONE */
+		/** Index of the matching bracket for an opening ( { [. INDEX_NONE if none */
 		int32 FindMatching(int32 OpenIndex) const
 		{
 			if (!Tokens.IsValidIndex(OpenIndex) || Tokens[OpenIndex].Type != ETokenType::Symbol)
@@ -453,7 +453,7 @@ namespace TypePasteParserPrivate
 			return INDEX_NONE;
 		}
 
-		/** [First, Last] 토큰 범위의 원문 (사이의 주석/공백 포함) */
+		/** Source text of the token range [First, Last] (including comments/whitespace in between) */
 		FString SourceSpan(int32 First, int32 Last) const
 		{
 			if (First > Last || !Tokens.IsValidIndex(First) || !Tokens.IsValidIndex(Last))
@@ -464,8 +464,8 @@ namespace TypePasteParserPrivate
 		}
 
 		/**
-		 * 범위에 붙은 설명 주석.
-		 * bIncludeInner 가 true 면 범위 안쪽 토큰의 주석도 찾는다 (멤버처럼 원문을 재구성하는 경우).
+		 * Description comment attached to the range.
+		 * If bIncludeInner is true, comments on tokens inside the range are searched too (when the source is rebuilt, as for members).
 		 */
 		FString CommentFor(int32 First, int32 Last, bool bIncludeInner) const
 		{
@@ -505,7 +505,7 @@ namespace TypePasteParserPrivate
 			{
 				return FString();
 			}
-			return FString(TEXT("[")) + FString::FromInt(Tokens[TokenIndex].Line) + TEXT("줄] ");
+			return FString(TEXT("[line ")) + FString::FromInt(Tokens[TokenIndex].Line) + TEXT("] ");
 		}
 
 		bool IsNameTaken(const FString& Name) const
@@ -514,7 +514,7 @@ namespace TypePasteParserPrivate
 		}
 
 		// ------------------------------------------------------------------
-		// 최상위 선언
+		// Top-level declarations
 		// ------------------------------------------------------------------
 
 		void ParseMacroDeclaration(bool bIsEnum)
@@ -530,7 +530,7 @@ namespace TypePasteParserPrivate
 				const int32 Close = FindMatching(Cursor);
 				if (Close == INDEX_NONE)
 				{
-					Result.AddError(LineLabel(MacroIndex) + MacroName + TEXT(" 의 괄호가 닫히지 않았습니다."));
+					Result.AddError(LineLabel(MacroIndex) + MacroName + TEXT(": the parentheses are not closed."));
 					Pos = MacroIndex + 1;
 					return;
 				}
@@ -541,7 +541,7 @@ namespace TypePasteParserPrivate
 			const TCHAR* Keyword = bIsEnum ? TEXT("enum") : TEXT("struct");
 			if (!IsWordAt(Cursor, Keyword))
 			{
-				Result.AddWarning(LineLabel(MacroIndex) + MacroName + TEXT(" 다음에 ") + Keyword + TEXT(" 선언이 없어 건너뜁니다."));
+				Result.AddWarning(LineLabel(MacroIndex) + MacroName + TEXT(" is not followed by a ") + Keyword + TEXT(" declaration, skipped."));
 				Pos = Cursor;
 				return;
 			}
@@ -551,7 +551,7 @@ namespace TypePasteParserPrivate
 				: ParseStruct(Cursor, Specifiers, true, Comment);
 			if (!bParsed)
 			{
-				Result.AddError(LineLabel(Cursor) + MacroName + TEXT(" 선언을 해석하지 못했습니다. 문법을 확인해 주세요."));
+				Result.AddError(LineLabel(Cursor) + MacroName + TEXT(": could not parse the declaration. Please check the syntax."));
 				Pos = Cursor + 1;
 			}
 		}
@@ -571,7 +571,7 @@ namespace TypePasteParserPrivate
 				return;
 			}
 
-			Result.AddWarning(LineLabel(MacroIndex) + Tokens[MacroIndex].Text + TEXT(" 클래스는 지원하지 않아 건너뜁니다. (열거형/구조체만 생성합니다)"));
+			Result.AddWarning(LineLabel(MacroIndex) + Tokens[MacroIndex].Text + TEXT(" classes are not supported, skipped. (Only enums/structs are generated)"));
 			while (Cursor < Tokens.Num() && !IsSymbolAt(Cursor, TEXT("{")) && !IsSymbolAt(Cursor, TEXT(";")))
 			{
 				++Cursor;
@@ -589,10 +589,10 @@ namespace TypePasteParserPrivate
 		}
 
 		// ------------------------------------------------------------------
-		// 열거형
+		// Enums
 		// ------------------------------------------------------------------
 
-		/** Start 는 'enum' 토큰. 열거형 선언이 아니면 false (Pos 변경 없음) */
+		/** Start is the 'enum' token. Returns false if it is not an enum declaration (Pos unchanged) */
 		bool ParseEnum(int32 Start, const FString& Specifiers, bool bHadMacro, const FString& Comment)
 		{
 			FTPEnumDef Def;
@@ -630,7 +630,7 @@ namespace TypePasteParserPrivate
 
 			if (IsSymbolAt(Cursor, TEXT(";")))
 			{
-				// 전방 선언 → 무시
+				// Forward declaration -> ignore
 				Pos = Cursor + 1;
 				return true;
 			}
@@ -642,7 +642,7 @@ namespace TypePasteParserPrivate
 			const int32 Close = FindMatching(Cursor);
 			if (Close == INDEX_NONE)
 			{
-				Result.AddError(LineLabel(Start) + TEXT("열거형 '") + Def.Name + TEXT("' 의 중괄호가 닫히지 않았습니다."));
+				Result.AddError(LineLabel(Start) + TEXT("Enum '") + Def.Name + TEXT("': the braces are not closed."));
 				Pos = Cursor + 1;
 				return true;
 			}
@@ -657,7 +657,7 @@ namespace TypePasteParserPrivate
 				}
 				if (!IsIdentAt(Q))
 				{
-					Result.AddWarning(LineLabel(Q) + TEXT("열거형 '") + Def.Name + TEXT("' 에서 해석할 수 없는 '") + Tokens[Q].Text + TEXT("' 부분을 건너뜁니다."));
+					Result.AddWarning(LineLabel(Q) + TEXT("Enum '") + Def.Name + TEXT("': skipped '") + Tokens[Q].Text + TEXT("', which could not be parsed."));
 					int32 Depth = 0;
 					while (Q < Close)
 					{
@@ -750,7 +750,7 @@ namespace TypePasteParserPrivate
 
 				if (Def.FindEntryIndex(Entry.Name) != INDEX_NONE)
 				{
-					Result.AddWarning(LineLabel(EntryFirst) + TEXT("열거형 '") + Def.Name + TEXT("' 에 항목 '") + Entry.Name + TEXT("' 이 중복되어 하나만 사용합니다."));
+					Result.AddWarning(LineLabel(EntryFirst) + TEXT("Enum '") + Def.Name + TEXT("': entry '") + Entry.Name + TEXT("' is duplicated, only one is used."));
 					continue;
 				}
 				Def.Entries.Add(MoveTemp(Entry));
@@ -764,22 +764,22 @@ namespace TypePasteParserPrivate
 
 			if (IsNameTaken(Def.Name))
 			{
-				Result.AddWarning(LineLabel(Start) + TEXT("'") + Def.Name + TEXT("' 이 두 번 정의되어 처음 것만 사용합니다."));
+				Result.AddWarning(LineLabel(Start) + TEXT("'") + Def.Name + TEXT("' is defined twice, only the first one is used."));
 				return true;
 			}
 			if (Def.Entries.Num() == 0)
 			{
-				Result.AddWarning(LineLabel(Start) + TEXT("열거형 '") + Def.Name + TEXT("' 에 항목이 없습니다."));
+				Result.AddWarning(LineLabel(Start) + TEXT("Enum '") + Def.Name + TEXT("' has no entries."));
 			}
 			Result.Enums.Add(MoveTemp(Def));
 			return true;
 		}
 
 		// ------------------------------------------------------------------
-		// 구조체
+		// Structs
 		// ------------------------------------------------------------------
 
-		/** Start 는 'struct' 토큰. 구조체 선언이 아니면 false (Pos 변경 없음) */
+		/** Start is the 'struct' token. Returns false if it is not a struct declaration (Pos unchanged) */
 		bool ParseStruct(int32 Start, const FString& Specifiers, bool bHadMacro, const FString& Comment)
 		{
 			FTPStructDef Def;
@@ -806,7 +806,7 @@ namespace TypePasteParserPrivate
 
 			if (IsSymbolAt(Cursor, TEXT(";")))
 			{
-				// 전방 선언 → 무시
+				// Forward declaration -> ignore
 				Pos = Cursor + 1;
 				return true;
 			}
@@ -854,7 +854,7 @@ namespace TypePasteParserPrivate
 			const int32 Close = FindMatching(Cursor);
 			if (Close == INDEX_NONE)
 			{
-				Result.AddError(LineLabel(Start) + TEXT("구조체 '") + Def.Name + TEXT("' 의 중괄호가 닫히지 않았습니다."));
+				Result.AddError(LineLabel(Start) + TEXT("Struct '") + Def.Name + TEXT("': the braces are not closed."));
 				Pos = Cursor + 1;
 				return true;
 			}
@@ -869,12 +869,12 @@ namespace TypePasteParserPrivate
 
 			if (IsNameTaken(Def.Name))
 			{
-				Result.AddWarning(LineLabel(Start) + TEXT("'") + Def.Name + TEXT("' 이 두 번 정의되어 처음 것만 사용합니다."));
+				Result.AddWarning(LineLabel(Start) + TEXT("'") + Def.Name + TEXT("' is defined twice, only the first one is used."));
 				return true;
 			}
 			if (Def.Members.Num() == 0 && Def.NumRawItems() == 0)
 			{
-				Result.AddWarning(LineLabel(Start) + TEXT("구조체 '") + Def.Name + TEXT("' 에 멤버가 없습니다."));
+				Result.AddWarning(LineLabel(Start) + TEXT("Struct '") + Def.Name + TEXT("' has no members."));
 			}
 			Result.Structs.Add(MoveTemp(Def));
 			return true;
@@ -922,7 +922,7 @@ namespace TypePasteParserPrivate
 						const int32 Close = FindMatching(Q);
 						if (Close == INDEX_NONE || Close >= End)
 						{
-							Result.AddError(LineLabel(StatementStart) + TEXT("구조체 '") + Def.Name + TEXT("' 의 UPROPERTY 괄호가 닫히지 않았습니다."));
+							Result.AddError(LineLabel(StatementStart) + TEXT("Struct '") + Def.Name + TEXT("': the UPROPERTY parentheses are not closed."));
 							return;
 						}
 						Specifiers = CollapseWhitespace(SourceSpan(Q + 1, Close - 1));
@@ -962,16 +962,16 @@ namespace TypePasteParserPrivate
 					Item.Comment = CommentFor(StatementStart, StatementLast, false);
 					Def.Items.Add(Item);
 
-					const TCHAR* What = (bForceRaw || bIsFunction) ? TEXT("함수/생성자") : TEXT("구문");
-					Result.AddInfo(LineLabel(StatementStart) + TEXT("구조체 '") + Def.Name + TEXT("' 의 ") + What
-						+ TEXT(" 를 원문 그대로 보존합니다. (C++ 생성 시에만 유지, 블루프린트 구조체에는 반영되지 않음)"));
+					const TCHAR* What = (bForceRaw || bIsFunction) ? TEXT("function/constructor") : TEXT("statement");
+					Result.AddInfo(LineLabel(StatementStart) + TEXT("Struct '") + Def.Name + TEXT("': keeping a ") + What
+						+ TEXT(" verbatim. (Kept in C++ output only, not reflected in Blueprint structs)"));
 				}
 
 				Q = StatementLast + 1;
 			}
 		}
 
-		/** 구문의 마지막 토큰 인덱스(';' 또는 함수 본문의 '}')를 찾는다 */
+		/** Finds the last token index of a statement (';' or the '}' of a function body) */
 		int32 FindStatementEnd(int32 Start, int32 Limit, bool& bOutIsFunction) const
 		{
 			bOutIsFunction = false;
@@ -985,7 +985,7 @@ namespace TypePasteParserPrivate
 				}
 				if (IsWordAt(Q, TEXT("operator")))
 				{
-					// 연산자 오버로드: operator==(...), operator()(...), operator bool() ...
+					// Operator overloads: operator==(...), operator()(...), operator bool() ...
 					bOutIsFunction = true;
 					int32 ParamOpen = Q + 1;
 					if (IsSymbolAt(ParamOpen, TEXT("(")) && IsSymbolAt(ParamOpen + 1, TEXT(")")))
@@ -1018,7 +1018,7 @@ namespace TypePasteParserPrivate
 					}
 					if (!bSawAssign && Q > Start && IsIdentAt(Q - 1))
 					{
-						// 이름 바로 뒤의 '(' → 함수/생성자 선언
+						// '(' right after the name -> function/constructor declaration
 						bOutIsFunction = true;
 						return SkipFunctionTail(Close + 1, Limit);
 					}
@@ -1040,7 +1040,7 @@ namespace TypePasteParserPrivate
 			return Limit - 1;
 		}
 
-		/** 함수 매개변수 목록 다음부터 함수 끝까지 건너뛴다 */
+		/** Skips from after the parameter list to the end of the function */
 		int32 SkipFunctionTail(int32 Index, int32 Limit) const
 		{
 			int32 Q = Index;
@@ -1061,7 +1061,7 @@ namespace TypePasteParserPrivate
 				}
 				if (IsSymbolAt(Q, TEXT(":")))
 				{
-					// 생성자 초기화 목록: A(1), B{2} { ... }
+					// Constructor initializer list: A(1), B{2} { ... }
 					++Q;
 					while (Q < Limit)
 					{
@@ -1093,10 +1093,10 @@ namespace TypePasteParserPrivate
 			return Limit - 1;
 		}
 
-		/** [First, Last] 구간(마지막은 보통 ';')을 멤버 변수 선언으로 해석. 실패하면 false */
+		/** Parses the range [First, Last] (Last is usually ';') as a member variable declaration. Returns false on failure */
 		bool ParseMemberDeclaration(int32 First, int32 Last, const FString& Specifiers, bool bHadUProperty, const FString& Comment, FTPStructDef& Def)
 		{
-			const int32 DeclEnd = IsSymbolAt(Last, TEXT(";")) ? Last : Last + 1; // 미포함
+			const int32 DeclEnd = IsSymbolAt(Last, TEXT(";")) ? Last : Last + 1; // exclusive
 			int32 Cursor = First;
 
 			while (Cursor < DeclEnd && IsIdentAt(Cursor))
@@ -1118,7 +1118,7 @@ namespace TypePasteParserPrivate
 				return false;
 			}
 
-			// 이름 뒤 분할점: '=', '{', ':'(비트필드), '[' 또는 다중 선언의 ','
+			// Split point after the name: '=', '{', ':' (bitfield), '[' or ',' of a multiple declaration
 			int32 Angle = 0;
 			int32 Paren = 0;
 			int32 Split = DeclEnd;
@@ -1160,12 +1160,12 @@ namespace TypePasteParserPrivate
 			}
 
 			TArray<int32> NameIndices;
-			int32 TypeEnd = INDEX_NONE; // 미포함
+			int32 TypeEnd = INDEX_NONE; // exclusive
 			if (Commas.Num() > 0)
 			{
 				if (Split != DeclEnd)
 				{
-					// 초기화가 섞인 다중 선언은 원문 보존
+					// Multiple declarations mixed with initializers are kept verbatim
 					return false;
 				}
 				const int32 FirstName = Commas[0] - 1;
@@ -1288,7 +1288,7 @@ namespace TypePasteParserPrivate
 			return true;
 		}
 
-		/** Index 부터 End(미포함)까지를 타입으로 해석 */
+		/** Parses Index up to End (exclusive) as a type */
 		bool ParseType(int32& Index, int32 End, FTPTypeRef& OutType) const
 		{
 			while (Index < End && IsIdentAt(Index))
@@ -1314,7 +1314,7 @@ namespace TypePasteParserPrivate
 
 			if (Tokens[Index].Type == ETokenType::Number)
 			{
-				// 타입이 아닌 템플릿 인자 (TInlineAllocator<4> 등)
+				// Template argument that is not a type (TInlineAllocator<4> etc.)
 				OutType.Name = Tokens[Index].Text;
 				++Index;
 				return true;
@@ -1332,7 +1332,7 @@ namespace TypePasteParserPrivate
 			OutType.Name = Tokens[Index].Text;
 			++Index;
 
-			// unsigned int, long long 같은 여러 단어 기본 타입
+			// Multi-word primitive types such as unsigned int, long long
 			if (OutType.Name.Equals(TEXT("unsigned"), ESearchCase::CaseSensitive) || OutType.Name.Equals(TEXT("signed"), ESearchCase::CaseSensitive)
 				|| OutType.Name.Equals(TEXT("long"), ESearchCase::CaseSensitive) || OutType.Name.Equals(TEXT("short"), ESearchCase::CaseSensitive))
 			{
@@ -1413,12 +1413,12 @@ FTPParseResult FTypePasteParser::Parse(const FString& Source)
 	FParser Parser(Source, MoveTemp(Tokens), Result);
 	Parser.Run();
 
-	// 생성 결과는 영어만 (D16): 한글 등 ASCII 가 아닌 텍스트는 여기서 빼서 블루프린트/C++ 모두에 적용
+	// Generated output is English only (D16): non-ASCII text is removed here so both Blueprint and C++ output get it
 	TypePasteUtils::EnforceEnglishOnly(Result);
 
 	if (!Result.HasAnyType() && !Result.HasErrors() && !Source.TrimStartAndEnd().IsEmpty())
 	{
-		Result.AddWarning(TEXT("열거형(enum)이나 구조체(struct) 선언을 찾지 못했습니다. AI 답변의 코드 부분이 포함되었는지 확인해 주세요."));
+		Result.AddWarning(TEXT("No enum or struct declaration was found. Make sure the code part of the AI answer is included."));
 	}
 	return Result;
 }

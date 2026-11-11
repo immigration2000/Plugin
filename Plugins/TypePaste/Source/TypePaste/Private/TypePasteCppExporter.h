@@ -1,4 +1,4 @@
-﻿// TypePaste - 생성된 C++ 헤더를 프로젝트 모듈 소스 폴더에 쓰는 에디터 측 기능
+﻿// TypePaste - editor-side writing of generated C++ headers into a project module's source folder
 
 #pragma once
 
@@ -6,22 +6,22 @@
 
 struct FTPCppExportOptions
 {
-	/** 대상 프로젝트 모듈 이름 (.uproject 의 Modules) */
+	/** Target project module name (Modules in the .uproject) */
 	FString ModuleName;
 
-	/** 모듈의 Public 폴더(없으면 모듈 루트) 아래 하위 폴더. 예) Types */
+	/** Subfolder under the module's Public folder (module root if there is none). e.g. Types */
 	FString SubFolder = TEXT("Types");
 
-	/** true: 한 파일로, false: 타입마다 파일 하나 */
+	/** true: one file, false: one file per type */
 	bool bSingleFile = true;
 
-	/** 한 파일로 묶을 때 파일 이름 (비우면 자동) */
+	/** File name when writing a single file (automatic if empty) */
 	FString FileBaseName;
 
-	/** 같은 이름의 파일이 있으면 덮어쓰기 */
+	/** Overwrite files with the same name */
 	bool bOverwrite = false;
 
-	/** 생성 후 IDE 에서 열기 */
+	/** Open in the IDE after creating */
 	bool bOpenInIDE = true;
 };
 
@@ -34,15 +34,15 @@ struct FTPCppExportResult
 class FTypePasteCppExporter
 {
 public:
-	/** 현재 프로젝트의 C++ 모듈 이름들 (Runtime 모듈 우선) */
+	/** C++ module names of the current project (Runtime modules first) */
 	static TArray<FString> GetProjectModuleNames();
 
-	/** 파일이 써질 폴더 (모듈을 찾지 못하면 빈 문자열) */
+	/** Folder the files are written to (empty if the module is not found) */
 	static FString GetTargetDirectory(const FTPCppExportOptions& Options);
 
-	/** 파일 내용 생성 (미리보기에도 사용, 디스크에 쓰지 않음) */
+	/** Generates file contents (also used for the preview, does not write to disk) */
 	static TArray<FTPCppFile> GenerateFiles(const FTPParseResult& Parsed, const FTPCppExportOptions& Options, TArray<FTPMessage>& OutMessages);
 
-	/** 생성 후 디스크에 쓰기 */
+	/** Generates and writes to disk */
 	static FTPCppExportResult Export(const FTPParseResult& Parsed, const FTPCppExportOptions& Options);
 };

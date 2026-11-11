@@ -9,7 +9,7 @@ static FString FromU8(const std::string& In){FString O;size_t i=0;while(i<In.siz
 int main(int argc,char**argv){
   std::vector<FString> Seeds;
   for(int i=1;i<argc;++i){std::ifstream f(argv[i]);std::stringstream ss;ss<<f.rdbuf();Seeds.push_back(FromU8(ss.str()));}
-  const wchar_t* Pieces[]={L"UENUM(",L"USTRUCT(",L")",L"(",L"{",L"}",L";",L",",L"enum",L"class",L"struct",L"FFoo",L"EBar",L"=",L"<",L">",L"TArray",L"int32",L"UPROPERTY(",L"UMETA(",L"\"",L"'",L"//",L"/*",L"*/",L"\n",L" ",L":",L"::",L"operator",L"GENERATED_BODY()",L"public:",L"[",L"]",L"*",L"&",L"#",L"`",L"10.f",L"한글",L"x"};
+  const wchar_t* Pieces[]={L"UENUM(",L"USTRUCT(",L")",L"(",L"{",L"}",L";",L",",L"enum",L"class",L"struct",L"FFoo",L"EBar",L"=",L"<",L">",L"TArray",L"int32",L"UPROPERTY(",L"UMETA(",L"\"",L"'",L"//",L"/*",L"*/",L"\n",L" ",L":",L"::",L"operator",L"GENERATED_BODY()",L"public:",L"[",L"]",L"*",L"&",L"#",L"`",L"10.f",L"\uD55C\uAE00",L"x"};
   std::mt19937 rng(1234);
   int Iter=0;
   const char* EnvIters = std::getenv("FUZZ_ITERS"); const int Iters = EnvIters ? std::atoi(EnvIters) : 5000;

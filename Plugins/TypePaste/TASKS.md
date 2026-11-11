@@ -5,7 +5,7 @@
 - [x] **첫 빌드** (`RunUAT BuildPlugin`) 후 컴파일/링크 오류 수정 — 2026-11-11 수정 없이 통과 (오류·경고 0).
   `PluginEditor` 타깃도 `-DisableAdaptiveUnity` 로 유니티 빌드 통과. 아래 체크리스트는 이제 **런타임 동작** 확인용
 - [ ] **블루프린트 생성 수동 검증** — `Samples/Example_AI_Answer.txt` 붙여넣기, 이름 규칙 `E_ / S_`
-  - [ ] Tools 메뉴에 "TypePaste (타입 붙여넣기)" 가 보이고 탭이 열린다
+  - [ ] Tools 메뉴에 "TypePaste" 가 보이고 탭이 열린다
   - [ ] 열거형 표시 이름이 한글(UMETA DisplayName)로 들어가고, `MAX UMETA(Hidden)` 은 빠진다
   - [ ] (D16 이후 한글 표시 이름은 빠짐 — 영어 DisplayName 이 들어가는지로 확인)
   - [ ] 항목 툴팁(주석)이 저장 후 에디터 재시작에도 남는다 (`UEnum::SetMetaData` 로 넣음 — 안 남으면 다른 방법 필요)
@@ -15,10 +15,10 @@
   - [ ] `TSoftObjectPtr<UStaticMesh>`, `TSubclassOf<AActor>`, `TArray<FGameplayTag>`, `TMap<FName, float>` 핀 타입
   - [ ] 같은 이름 에셋이 있을 때 재사용 경고만 나오고 덮어쓰지 않는다
   - [ ] "생성 후 바로 저장" 으로 .uasset 이 디스크에 저장된다, 콘텐츠 브라우저가 생성 위치로 이동한다
-- [ ] **영어만 규칙 확인** — 한글이 섞인 `Samples/Example_AI_Answer.txt` 를 붙여넣으면 미리보기에 "영어가 아닌 텍스트를 뺐습니다" 경고,
+- [ ] **영어만 규칙 확인** — 한글이 섞인 `Samples/Example_AI_Answer.txt` 를 붙여넣으면 미리보기에 "Generated output is English only. Removed non-English text..." 경고,
       블루프린트 열거형 표시 이름은 항목 이름(None/Melee/...)으로, C++ 헤더에는 한글이 없다
 - [ ] **빌드 후 다시 열기 수동 검증** (자동 확인한 것: Build.bat 의 엔진 찾기·PID 대기·빌드, 플러그인 컴파일)
-  - [ ] C++ 생성 직후 "지금 빌드할까요?" 창 → 예 → 저장 확인 → 에디터 종료 → 콘솔 창에서 빌드 → 프로젝트가 다시 열림
+  - [ ] C++ 생성 직후 "...reopen the project now?" 창 → Yes → 저장 확인 → 에디터 종료 → 콘솔 창에서 빌드 → 프로젝트가 다시 열림
   - [ ] 저장 확인에서 취소하면 에디터가 남고, 콘솔 창은 기다리다가 에디터를 닫으면 빌드한다
   - [ ] 빌드 실패 시 콘솔 창이 오류를 보여 주고 멈춘다(pause), 에디터는 열지 않는다
   - [ ] 프로젝트 루트에 `Build.bat` 이 복사되고, 더블클릭으로도 빌드 후 열린다

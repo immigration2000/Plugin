@@ -1,4 +1,4 @@
-﻿// TypePaste - 블루프린트 열거형/구조체 에셋 생성 구현
+﻿// TypePaste - Blueprint enum/struct asset creation
 
 #include "TypePasteBlueprintBuilder.h"
 #include "TypePasteModule.h"
@@ -28,18 +28,18 @@ namespace TypePasteBlueprintPrivate
 {
 	using namespace TypePasteUtils;
 
-	/** 타입 해석 결과 */
+	/** Type resolution result */
 	struct FResolved
 	{
 		bool bOk = false;
 		FEdGraphPinType PinType;
-		/** 미리보기용 설명 */
+		/** Description for the preview */
 		FString Description;
 		FString Error;
 		TArray<FString> Warnings;
-		/** 열거형이면 그 UEnum (미리보기에서는 비어 있을 수 있음) */
+		/** The UEnum if it is an enum (may be empty in the preview) */
 		UEnum* Enum = nullptr;
-		/** 이번에 새로 만드는 열거형이면 그 정의 (기본값 변환용) */
+		/** The definition if it is an enum created in this run (for default values) */
 		const FTPEnumDef* NewEnumDef = nullptr;
 		ETPPrimitiveKind Primitive = ETPPrimitiveKind::None;
 	};
@@ -93,7 +93,7 @@ namespace TypePasteBlueprintPrivate
 			CollectAssets(AssetRegistry, UUserDefinedStruct::StaticClass(), ExistingStructAssets);
 		}
 
-		/** 이번 작업에서 생성(또는 재사용)한 에셋 등록 */
+		/** Registers an asset created (or reused) in this run */
 		void RegisterLocal(const FString& CppName, UObject* Asset, bool bCreatedNow)
 		{
 			LocalAssets.Add(CppName, Asset);
@@ -120,14 +120,14 @@ namespace TypePasteBlueprintPrivate
 			const int32 Expected = bMap ? 2 : 1;
 			if (Type.Args.Num() < Expected)
 			{
-				Out.Error = FString(TEXT("'")) + Type.ToString() + TEXT("' 의 템플릿 인자가 부족합니다.");
+				Out.Error = FString(TEXT("'")) + Type.ToString() + TEXT("': not enough template arguments.");
 				return Out;
 			}
 			for (int32 Index = 0; Index < Expected; ++Index)
 			{
 				if (IsContainerName(Type.Args[Index].Name))
 				{
-					Out.Error = TEXT("블루프린트 구조체는 중첩 컨테이너(TArray<TArray<>> 등)를 지원하지 않습니다. 안쪽을 구조체로 감싸 주세요.");
+					Out.Error = TEXT("Blueprint structs do not support nested containers (TArray<TArray<>> etc.). Wrap the inner one in a struct.");
 					return Out;
 				}
 			}
@@ -169,7 +169,7 @@ namespace TypePasteBlueprintPrivate
 			return Out;
 		}
 
-		/** 이 이름의 에셋이 대상 경로에 이미 있는지 */
+		/** Whether an asset with this name already exists in the target path */
 		bool DoesAssetExist(const FString& AssetName) const
 		{
 			return PackageExists(PackagePath + TEXT("/") + AssetName);
@@ -191,7 +191,7 @@ namespace TypePasteBlueprintPrivate
 			for (const FAssetData& Data : Assets)
 			{
 				const FString Key = Data.AssetName.ToString();
-				// 이름이 같은 에셋이 여러 개면 대상 경로에 있는 것을 우선
+				// If several assets share the name, prefer the one in the target path
 				if (!OutMap.Contains(Key) || Data.PackagePath.ToString().Equals(PackagePath))
 				{
 					OutMap.Add(Key, Data);
@@ -286,13 +286,13 @@ namespace TypePasteBlueprintPrivate
 		{
 			if (Type.Args.Num() != 1)
 			{
-				return Fail(Out, FString(TEXT("'")) + Type.ToString() + TEXT("' 의 템플릿 인자를 해석하지 못했습니다."));
+				return Fail(Out, FString(TEXT("'")) + Type.ToString() + TEXT("': could not resolve the template argument."));
 			}
 			const FString ClassName = Type.Args[0].GetCleanName();
 			UClass* Class = FindClass(ClassName);
 			if (!Class)
 			{
-				return Fail(Out, FString(TEXT("클래스 '")) + ClassName + TEXT("' 를 찾지 못했습니다. (C++ 클래스만 지원, 해당 모듈이 로드되어 있어야 함)"));
+				return Fail(Out, FString(TEXT("Class '")) + ClassName + TEXT("' was not found. (Only C++ classes are supported, and their module must be loaded)"));
 			}
 			Out.PinType.PinSubCategoryObject = Class;
 
@@ -314,7 +314,7 @@ namespace TypePasteBlueprintPrivate
 
 			if (!TemplateName.Equals(TEXT("TObjectPtr"), ESearchCase::CaseSensitive))
 			{
-				Out.Warnings.Add(TemplateName + TEXT(" 는 블루프린트 구조체에 없어 일반 Object 참조로 만듭니다."));
+				Out.Warnings.Add(TemplateName + TEXT(" does not exist in Blueprint structs, created as a plain Object reference."));
 			}
 			Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
 			return Succeed(Out, FString(TEXT("Object Reference (")) + Class->GetName() + TEXT(")"));
@@ -336,33 +336,33 @@ namespace TypePasteBlueprintPrivate
 			{
 				if (Type.Args.Num() != 1)
 				{
-					return Fail(Out, TEXT("TEnumAsByte 의 인자를 해석하지 못했습니다."));
+					return Fail(Out, TEXT("Could not resolve the TEnumAsByte argument."));
 				}
 				return ResolveTerminal(Type.Args[0], Out);
 			}
 
 			if (Type.Args.Num() > 0)
 			{
-				return Fail(Out, FString(TEXT("'")) + Type.ToString() + TEXT("' 는 블루프린트 구조체에서 지원하지 않는 템플릿 타입입니다."));
+				return Fail(Out, FString(TEXT("'")) + Type.ToString() + TEXT("' is a template type Blueprint structs do not support."));
 			}
 
 			if (Type.PointerDepth > 1)
 			{
-				return Fail(Out, TEXT("이중 포인터는 지원하지 않습니다."));
+				return Fail(Out, TEXT("Double pointers are not supported."));
 			}
 			if (Type.PointerDepth == 1)
 			{
 				UClass* Class = FindClass(Name);
 				if (!Class)
 				{
-					return Fail(Out, FString(TEXT("클래스 '")) + Name + TEXT("' 를 찾지 못했습니다."));
+					return Fail(Out, FString(TEXT("Class '")) + Name + TEXT("' was not found."));
 				}
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
 				Out.PinType.PinSubCategoryObject = Class;
 				return Succeed(Out, FString(TEXT("Object Reference (")) + Class->GetName() + TEXT(")"));
 			}
 
-			// 기본 타입
+			// Primitive types
 			const ETPPrimitiveKind Kind = GetPrimitiveKind(Name);
 			Out.Primitive = Kind;
 			switch (Kind)
@@ -374,21 +374,21 @@ namespace TypePasteBlueprintPrivate
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Int;
 				if (!Name.Equals(TEXT("int32"), ESearchCase::CaseSensitive) && !Name.Equals(TEXT("int"), ESearchCase::CaseSensitive))
 				{
-					Out.Warnings.Add(FString(TEXT("블루프린트에는 ")) + Name + TEXT(" 이 없어 Integer(int32)로 만듭니다."));
+					Out.Warnings.Add(FString(TEXT("Blueprints have no ")) + Name + TEXT(", created as Integer (int32)."));
 				}
 				return Succeed(Out, TEXT("Integer"));
 			case ETPPrimitiveKind::Int64:
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Int64;
 				if (!Name.Equals(TEXT("int64"), ESearchCase::CaseSensitive))
 				{
-					Out.Warnings.Add(FString(TEXT("블루프린트에는 ")) + Name + TEXT(" 이 없어 Integer64(int64)로 만듭니다."));
+					Out.Warnings.Add(FString(TEXT("Blueprints have no ")) + Name + TEXT(", created as Integer64 (int64)."));
 				}
 				return Succeed(Out, TEXT("Integer64"));
 			case ETPPrimitiveKind::Byte:
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
 				return Succeed(Out, TEXT("Byte"));
 			case ETPPrimitiveKind::Real:
-				// UE5 블루프린트의 Float 는 double 정밀도
+				// Float in UE5 Blueprints has double precision
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Real;
 				Out.PinType.PinSubCategory = UEdGraphSchema_K2::PC_Double;
 				return Succeed(Out, TEXT("Float"));
@@ -406,7 +406,7 @@ namespace TypePasteBlueprintPrivate
 				break;
 			}
 
-			// 이번에 같이 붙여넣은 타입
+			// Types pasted together in this run
 			if (const FTPEnumDef* LocalEnum = Parsed.FindEnum(Name))
 			{
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
@@ -418,14 +418,14 @@ namespace TypePasteBlueprintPrivate
 					{
 						Out.NewEnumDef = LocalEnum;
 					}
-					return Succeed(Out, FString(TEXT("열거형 ")) + (*Asset)->GetName());
+					return Succeed(Out, FString(TEXT("Enum ")) + (*Asset)->GetName());
 				}
 				if (!bPreview)
 				{
-					return Fail(Out, FString(TEXT("열거형 '")) + Name + TEXT("' 에셋을 만들지 못해 연결할 수 없습니다."));
+					return Fail(Out, FString(TEXT("Enum '")) + Name + TEXT("' asset could not be created, so it cannot be linked."));
 				}
 				Out.NewEnumDef = LocalEnum;
-				return Succeed(Out, FString(TEXT("열거형 (함께 생성) ")) + Name);
+				return Succeed(Out, FString(TEXT("Enum (created together) ")) + Name);
 			}
 			if (Parsed.FindStruct(Name) != nullptr)
 			{
@@ -433,16 +433,16 @@ namespace TypePasteBlueprintPrivate
 				if (UObject* const* Asset = LocalAssets.Find(Name))
 				{
 					Out.PinType.PinSubCategoryObject = *Asset;
-					return Succeed(Out, FString(TEXT("구조체 ")) + (*Asset)->GetName());
+					return Succeed(Out, FString(TEXT("Struct ")) + (*Asset)->GetName());
 				}
 				if (!bPreview)
 				{
-					return Fail(Out, FString(TEXT("구조체 '")) + Name + TEXT("' 에셋이 아직 없어 연결할 수 없습니다. (생성 실패 또는 순환 참조)"));
+					return Fail(Out, FString(TEXT("Struct '")) + Name + TEXT("' asset does not exist yet, so it cannot be linked. (Creation failed or dependency cycle)"));
 				}
-				return Succeed(Out, FString(TEXT("구조체 (함께 생성) ")) + Name);
+				return Succeed(Out, FString(TEXT("Struct (created together) ")) + Name);
 			}
 
-			// 엔진/프로젝트에 이미 있는 타입
+			// Types that already exist in the engine/project
 			UEnum* ExistingEnum = nullptr;
 			FString Label;
 			if (FindExistingEnum(Name, ExistingEnum, Label))
@@ -450,21 +450,21 @@ namespace TypePasteBlueprintPrivate
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
 				Out.PinType.PinSubCategoryObject = ExistingEnum;
 				Out.Enum = ExistingEnum;
-				return Succeed(Out, FString(TEXT("열거형 ")) + Label);
+				return Succeed(Out, FString(TEXT("Enum ")) + Label);
 			}
 			UScriptStruct* ExistingStruct = nullptr;
 			if (FindExistingStruct(Name, ExistingStruct, Label))
 			{
 				Out.PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
 				Out.PinType.PinSubCategoryObject = ExistingStruct;
-				return Succeed(Out, FString(TEXT("구조체 ")) + Label);
+				return Succeed(Out, FString(TEXT("Struct ")) + Label);
 			}
 
-			return Fail(Out, FString(TEXT("'")) + Name + TEXT("' 타입을 찾지 못했습니다. 철자를 확인하거나, 새 타입이면 정의도 함께 붙여넣어 주세요."));
+			return Fail(Out, FString(TEXT("Type '")) + Name + TEXT("' was not found. Check the spelling, or paste its definition too if it is a new type."));
 		}
 	};
 
-	/** 열거형 기본값(EWeaponType::Melee) → 블루프린트 열거자 내부 이름 */
+	/** Enum default value (EWeaponType::Melee) -> internal name of the Blueprint enumerator */
 	static bool ConvertEnumDefault(const FResolved& Resolved, const FString& Expr, FString& OutValue)
 	{
 		UEnum* Enum = Resolved.Enum;
@@ -476,7 +476,7 @@ namespace TypePasteBlueprintPrivate
 
 		if (Resolved.NewEnumDef)
 		{
-			// 새로 만든 블루프린트 열거형: Hidden 을 뺀 순서 = 인덱스
+			// Newly created Blueprint enum: order without Hidden entries = index
 			const TArray<int32> Visible = Resolved.NewEnumDef->GetVisibleEntryIndices();
 			const int32 DefIndex = Resolved.NewEnumDef->FindEntryIndex(EntryName);
 			const int32 BlueprintIndex = Visible.Find(DefIndex);
@@ -488,7 +488,7 @@ namespace TypePasteBlueprintPrivate
 			return !OutValue.IsEmpty();
 		}
 
-		// 기존 열거형: 내부 이름 또는 표시 이름으로 찾기 (_MAX 제외)
+		// Existing enum: find by internal name or display name (excluding _MAX)
 		for (int32 Index = 0; Index < Enum->NumEnums() - 1; ++Index)
 		{
 			const FString ShortName = Enum->GetNameStringByIndex(Index);
@@ -501,7 +501,7 @@ namespace TypePasteBlueprintPrivate
 		return false;
 	}
 
-	/** 0, false, nullptr, {} 처럼 기본값과 같아서 굳이 설정할 필요가 없는 식 */
+	/** Expressions such as 0, false, nullptr, {} that equal the default and need not be set */
 	static bool IsTrivialDefault(const FString& Expr)
 	{
 		const FString E = Expr.TrimStartAndEnd();
@@ -511,7 +511,7 @@ namespace TypePasteBlueprintPrivate
 			|| E.Equals(TEXT("TEXT(\"\")")) || E.Equals(TEXT("\"\""));
 	}
 
-	/** 미리보기/생성 공용: 멤버의 블루프린트 기본값 문자열. 변환 불가/불필요하면 false */
+	/** Shared by preview/creation: Blueprint default value string of a member. Returns false if it cannot be converted or is not needed */
 	static bool GetBlueprintDefault(const FTPStructMember& Member, const FResolved& Resolved, FString& OutValue, FString& OutSkipReason)
 	{
 		OutSkipReason.Reset();
@@ -521,7 +521,7 @@ namespace TypePasteBlueprintPrivate
 		}
 		if (Resolved.PinType.ContainerType != EPinContainerType::None)
 		{
-			OutSkipReason = TEXT("컨테이너 기본값은 자동 설정하지 않습니다");
+			OutSkipReason = TEXT("container default values are not set automatically");
 			return false;
 		}
 		if (Resolved.Primitive != ETPPrimitiveKind::None)
@@ -530,14 +530,14 @@ namespace TypePasteBlueprintPrivate
 			{
 				return true;
 			}
-			OutSkipReason = TEXT("값으로 바꿀 수 없는 식입니다");
+			OutSkipReason = TEXT("the expression cannot be turned into a value");
 			return false;
 		}
 		if (Resolved.NewEnumDef || Resolved.Enum)
 		{
 			if (!Resolved.Enum)
 			{
-				// 미리보기: 아직 에셋이 없으므로 항목 이름만 보여준다
+				// Preview: the asset does not exist yet, so only show the entry name
 				const FString EntryName = StripScopeQualifier(Member.DefaultExpr.TrimStartAndEnd());
 				if (Resolved.NewEnumDef && Resolved.NewEnumDef->FindEntryIndex(EntryName) != INDEX_NONE)
 				{
@@ -545,21 +545,21 @@ namespace TypePasteBlueprintPrivate
 					OutValue = Entry.GetBlueprintDisplayName();
 					return true;
 				}
-				OutSkipReason = TEXT("열거형 항목을 찾지 못했습니다");
+				OutSkipReason = TEXT("the enum entry was not found");
 				return false;
 			}
 			if (ConvertEnumDefault(Resolved, Member.DefaultExpr, OutValue))
 			{
 				return true;
 			}
-			OutSkipReason = TEXT("열거형 항목을 찾지 못했습니다");
+			OutSkipReason = TEXT("the enum entry was not found");
 			return false;
 		}
-		OutSkipReason = TEXT("구조체/오브젝트 기본값은 자동 설정하지 않습니다");
+		OutSkipReason = TEXT("struct/object default values are not set automatically");
 		return false;
 	}
 
-	/** 비트필드(uint8 bFlag : 1)는 bool 로 취급 */
+	/** Bitfields (uint8 bFlag : 1) are treated as bool */
 	static FTPTypeRef GetEffectiveType(const FTPStructMember& Member)
 	{
 		if (Member.BitfieldWidth == 1)
@@ -571,7 +571,7 @@ namespace TypePasteBlueprintPrivate
 		return Member.Type;
 	}
 
-	/** 에셋 클래스를 새로 만드는 팩토리 (UEnumFactory / UStructureFactory 를 직접 링크하지 않고 찾는다) */
+	/** Factory that creates a new asset of the class (found without linking UEnumFactory / UStructureFactory directly) */
 	static UFactory* MakeFactoryFor(UClass* AssetClass)
 	{
 		for (TObjectIterator<UClass> It; It; ++It)
@@ -605,17 +605,17 @@ namespace TypePasteBlueprintPrivate
 			{
 				bOutReused = true;
 				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("'")) + ObjectPath
-					+ TEXT("' 이 이미 있어 새로 만들지 않고 기존 에셋을 참조합니다. (기존 내용은 바꾸지 않음)")));
+					+ TEXT("' already exists, so the existing asset is referenced instead of creating a new one. (Its content is not changed)")));
 				return Typed;
 			}
 			Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("'")) + PackageName
-				+ TEXT("' 에 다른 종류의 에셋이 있어 만들 수 없습니다. 이름 규칙이나 경로를 바꿔 주세요.")));
+				+ TEXT("' holds an asset of a different kind and cannot be created. Change the naming rule or the path.")));
 			return nullptr;
 		}
 
 		if (!Factory)
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("'")) + TAsset::StaticClass()->GetName() + TEXT("' 에셋을 만드는 팩토리를 찾지 못했습니다.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("Could not find a factory that creates '")) + TAsset::StaticClass()->GetName() + TEXT("' assets.")));
 			return nullptr;
 		}
 
@@ -623,14 +623,14 @@ namespace TypePasteBlueprintPrivate
 		TAsset* Typed = Cast<TAsset>(Created);
 		if (!Typed)
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("'")) + PackageName + TEXT("' 에셋을 만들지 못했습니다. 경로를 확인해 주세요.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("Could not create the asset '")) + PackageName + TEXT("'. Check the path.")));
 		}
 		return Typed;
 	}
 
 	static void FillEnum(UUserDefinedEnum* Enum, const FTPEnumDef& Def, FTPBlueprintResult& Result)
 	{
-		const int32 InitialCount = FMath::Max(0, Enum->NumEnums() - 1); // _MAX 제외
+		const int32 InitialCount = FMath::Max(0, Enum->NumEnums() - 1); // excluding _MAX
 		int32 NumAdded = 0;
 		bool bHasCustomValues = false;
 
@@ -639,7 +639,7 @@ namespace TypePasteBlueprintPrivate
 			if (Entry.bHidden)
 			{
 				Result.Messages.Add(FTPMessage(ETPSeverity::Info, Def.Name + TEXT("::") + Entry.Name
-					+ TEXT(" 는 UMETA(Hidden) 이라 블루프린트 열거형에서 뺐습니다. (블루프린트 열거형은 _MAX 를 자동으로 가짐)")));
+					+ TEXT(" is UMETA(Hidden), so it was left out of the Blueprint enum. (Blueprint enums get _MAX automatically)")));
 				continue;
 			}
 
@@ -658,17 +658,17 @@ namespace TypePasteBlueprintPrivate
 
 			if (!FEnumEditorUtils::SetEnumeratorDisplayName(Enum, NewIndex, FText::FromString(DisplayName)))
 			{
-				// "None" 처럼 쓸 수 없는 이름이면 뒤에 _ 를 붙여 재시도
+				// If the name cannot be used (like "None"), retry with a trailing _
 				const FString Fallback = DisplayName + TEXT("_");
 				if (FEnumEditorUtils::SetEnumeratorDisplayName(Enum, NewIndex, FText::FromString(Fallback)))
 				{
-					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Entry.Name + TEXT(" 의 표시 이름 '") + DisplayName
-						+ TEXT("' 을 쓸 수 없어 '") + Fallback + TEXT("' 로 만들었습니다.")));
+					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Entry.Name + TEXT(": display name '") + DisplayName
+						+ TEXT("' cannot be used, created as '") + Fallback + TEXT("' instead.")));
 				}
 				else
 				{
-					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Entry.Name + TEXT(" 의 표시 이름 '") + DisplayName
-						+ TEXT("' 을 지정하지 못했습니다. (중복된 이름일 수 있음)")));
+					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Entry.Name + TEXT(": could not set display name '") + DisplayName
+						+ TEXT("'. (It may be a duplicate)")));
 				}
 			}
 
@@ -679,7 +679,7 @@ namespace TypePasteBlueprintPrivate
 			++NumAdded;
 		}
 
-		// 팩토리가 기본으로 넣어 둔 항목이 있으면 제거
+		// Remove entries the factory added by default
 		if (NumAdded > 0)
 		{
 			for (int32 Index = 0; Index < InitialCount; ++Index)
@@ -694,13 +694,13 @@ namespace TypePasteBlueprintPrivate
 		}
 		if (bHasCustomValues)
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("열거형 '")) + Def.Name
-				+ TEXT("' 에 지정한 값(= 5 등)은 무시됩니다. 블루프린트 열거형은 0부터 순서대로 번호가 매겨집니다.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("Enum '")) + Def.Name
+				+ TEXT("': explicit values (= 5 etc.) are ignored. Blueprint enums are numbered in order from 0.")));
 		}
 		if (HasSpecifierFlag(Def.MacroSpecifiers, TEXT("Bitflags")))
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("열거형 '")) + Def.Name
-				+ TEXT("' 은 Bitflags 지만 블루프린트 열거형으로는 일반 열거형으로 만듭니다. 필요하면 에셋에서 비트마스크 옵션을 켜세요.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("Enum '")) + Def.Name
+				+ TEXT("' is Bitflags, but it is created as a regular Blueprint enum. Turn on the bitmask option in the asset if needed.")));
 		}
 		Enum->MarkPackageDirty();
 	}
@@ -718,20 +718,20 @@ namespace TypePasteBlueprintPrivate
 		{
 			if (!SkipReason.IsEmpty())
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(" 의 기본값 '") + Member.DefaultExpr + TEXT("' 은 적용하지 않았습니다: ")
-					+ SkipReason + TEXT(". 필요하면 에셋에서 직접 설정하세요.")));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(": default value '") + Member.DefaultExpr + TEXT("' was not applied: ")
+					+ SkipReason + TEXT(". Set it in the asset if needed.")));
 			}
 			return;
 		}
 		if (!FStructureEditorUtils::ChangeVariableDefaultValue(Struct, Guid, Value))
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(" 의 기본값 '") + Value + TEXT("' 을 적용하지 못했습니다. 에셋에서 직접 설정하세요.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(": could not apply default value '") + Value + TEXT("'. Set it in the asset.")));
 		}
 	}
 
 	static void FillStruct(UUserDefinedStruct* Struct, const FTPStructDef& Def, const FTypeResolver& Resolver, FTPBlueprintResult& Result)
 	{
-		// 팩토리가 넣어 둔 기본 멤버(MemberVar_0)는 마지막에 지운다
+		// The default member the factory added (MemberVar_0) is removed at the end
 		TArray<FGuid> PlaceholderGuids;
 		for (const FStructVariableDescription& Var : FStructureEditorUtils::GetVarDesc(Struct))
 		{
@@ -740,13 +740,13 @@ namespace TypePasteBlueprintPrivate
 
 		if (!Def.ParentName.IsEmpty())
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("구조체 '")) + Def.Name + TEXT("' 의 부모 '") + Def.ParentName
-				+ TEXT("' 는 블루프린트 구조체에 상속이 없어 무시합니다. (데이터 테이블 행 구조체로는 그대로 쓸 수 있음)")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("Struct '")) + Def.Name + TEXT("': parent '") + Def.ParentName
+				+ TEXT("' is ignored because Blueprint structs have no inheritance. (It still works as a data table row struct)")));
 		}
 		if (Def.NumRawItems() > 0)
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("구조체 '")) + Def.Name + TEXT("' 의 함수/생성자 등 ")
-				+ FString::FromInt(Def.NumRawItems()) + TEXT("개는 블루프린트 구조체에 반영되지 않습니다.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Info, FString(TEXT("Struct '")) + Def.Name + TEXT("': ")
+				+ FString::FromInt(Def.NumRawItems()) + TEXT(" function(s)/constructor(s) etc. are not reflected in the Blueprint struct.")));
 		}
 
 		TArray<FString> UsedNames;
@@ -756,14 +756,14 @@ namespace TypePasteBlueprintPrivate
 			const FString Label = Def.Name + TEXT("::") + Member.Name;
 			if (UsedNames.Contains(Member.Name))
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 이름이 중복되어 건너뜁니다.")));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(": duplicate name, skipped.")));
 				continue;
 			}
 
 			FResolved Resolved = Resolver.Resolve(GetEffectiveType(Member));
 			if (!Resolved.bOk)
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 건너뜀: ") + Resolved.Error));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" skipped: ") + Resolved.Error));
 				continue;
 			}
 			for (const FString& Warning : Resolved.Warnings)
@@ -774,29 +774,29 @@ namespace TypePasteBlueprintPrivate
 			{
 				if (Resolved.PinType.ContainerType != EPinContainerType::None)
 				{
-					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 건너뜀: 컨테이너의 고정 크기 배열은 지원하지 않습니다.")));
+					Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" skipped: fixed-size arrays of containers are not supported.")));
 					continue;
 				}
 				Resolved.PinType.ContainerType = EPinContainerType::Array;
-				Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(" 는 고정 크기 배열") + Member.ArrayDim + TEXT(" 이라 Array 로 만듭니다.")));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Info, Label + TEXT(" is a fixed-size array") + Member.ArrayDim + TEXT(", created as an Array.")));
 			}
 
 			FString Reason;
 			if (!FStructureEditorUtils::CanHaveAMemberVariableOfType(Struct, Resolved.PinType, &Reason))
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 건너뜀: ") + (Reason.IsEmpty() ? FString(TEXT("이 타입은 구조체 멤버로 쓸 수 없습니다.")) : Reason)));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" skipped: ") + (Reason.IsEmpty() ? FString(TEXT("this type cannot be used as a struct member.")) : Reason)));
 				continue;
 			}
 			if (!FStructureEditorUtils::AddVariable(Struct, Resolved.PinType))
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 건너뜀: 멤버를 추가하지 못했습니다.")));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" skipped: could not add the member.")));
 				continue;
 			}
 
 			const FGuid Guid = FStructureEditorUtils::GetVarDesc(Struct).Last().VarGuid;
 			if (!FStructureEditorUtils::RenameVariable(Struct, Guid, Member.Name))
 			{
-				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(" 의 이름을 지정하지 못했습니다. 에셋에서 직접 바꿔 주세요.")));
+				Result.Messages.Add(FTPMessage(ETPSeverity::Warning, Label + TEXT(": could not set the name. Rename it in the asset.")));
 			}
 			if (!Member.Comment.IsEmpty())
 			{
@@ -817,8 +817,8 @@ namespace TypePasteBlueprintPrivate
 		}
 		else
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("구조체 '")) + Def.Name
-				+ TEXT("' 에 멤버를 하나도 만들지 못해 기본 멤버(MemberVar_0)만 남았습니다.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, FString(TEXT("Struct '")) + Def.Name
+				+ TEXT("': no member could be created, so only the default member (MemberVar_0) is left.")));
 		}
 
 		if (!Def.Comment.IsEmpty())
@@ -854,15 +854,15 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 	const FString PackagePath = NormalizePackagePath(Options.PackagePath);
 	FTypeResolver Resolver(Parsed, PackagePath, true);
 
-	FString Text = FString(TEXT("블루프린트 에셋 미리보기  —  저장 위치: ")) + PackagePath + TEXT("\n");
+	FString Text = FString(TEXT("Blueprint asset preview  -  location: ")) + PackagePath + TEXT("\n");
 
 	for (const FTPEnumDef& Def : Parsed.Enums)
 	{
 		const FString AssetName = MakeAssetName(Def.Name, true, Options.Naming);
-		Text += FString(TEXT("\n[열거형] ")) + Def.Name + TEXT("  →  ") + AssetName;
+		Text += FString(TEXT("\n[Enum] ")) + Def.Name + TEXT("  ->  ") + AssetName;
 		if (Resolver.DoesAssetExist(AssetName))
 		{
-			Text += TEXT("   (이미 있음: 기존 에셋 재사용)");
+			Text += TEXT("   (already exists: the existing asset is reused)");
 		}
 		Text += TEXT("\n");
 
@@ -871,7 +871,7 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 		{
 			if (Entry.bHidden)
 			{
-				Text += FString(TEXT("      - ")) + Entry.Name + TEXT(" (Hidden → 제외)\n");
+				Text += FString(TEXT("      - ")) + Entry.Name + TEXT(" (Hidden -> left out)\n");
 				continue;
 			}
 			FString Line = FString(TEXT("   ")) + PadRight(FString::FromInt(BlueprintIndex++) + TEXT("."), 4) + Entry.GetBlueprintDisplayName();
@@ -892,18 +892,18 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 	SortStructsByDependency(Parsed, Order, Cycles);
 	if (Cycles.Num() > 0)
 	{
-		OutMessages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("구조체가 서로(또는 자기 자신을) 값으로 포함하고 있습니다: "))
-			+ FString::Join(Cycles, TEXT(", ")) + TEXT(". 한쪽을 TArray 나 오브젝트 참조로 바꿔 주세요.")));
+		OutMessages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("Structs contain each other (or themselves) by value: "))
+			+ FString::Join(Cycles, TEXT(", ")) + TEXT(". Change one of them to a TArray or an object reference.")));
 	}
 
 	for (const int32 StructIndex : Order)
 	{
 		const FTPStructDef& Def = Parsed.Structs[StructIndex];
 		const FString AssetName = MakeAssetName(Def.Name, false, Options.Naming);
-		Text += FString(TEXT("\n[구조체] ")) + Def.Name + TEXT("  →  ") + AssetName;
+		Text += FString(TEXT("\n[Struct] ")) + Def.Name + TEXT("  ->  ") + AssetName;
 		if (Resolver.DoesAssetExist(AssetName))
 		{
-			Text += TEXT("   (이미 있음: 기존 에셋 재사용)");
+			Text += TEXT("   (already exists: the existing asset is reused)");
 		}
 		Text += TEXT("\n");
 
@@ -919,15 +919,15 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 			FString Line = FString(TEXT("   ")) + PadRight(Member.Name, NameWidth) + TEXT("  ");
 			if (!Resolved.bOk)
 			{
-				Line += FString(TEXT("✗ ")) + Resolved.Error;
-				OutMessages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Member.Name + TEXT(" 은 만들어지지 않습니다: ") + Resolved.Error));
+				Line += FString(TEXT("[x] ")) + Resolved.Error;
+				OutMessages.Add(FTPMessage(ETPSeverity::Warning, Def.Name + TEXT("::") + Member.Name + TEXT(" will not be created: ") + Resolved.Error));
 			}
 			else
 			{
 				Line += Resolved.Description;
 				if (!Member.ArrayDim.IsEmpty())
 				{
-					Line += FString(TEXT("  → Array")) + Member.ArrayDim;
+					Line += FString(TEXT("  -> Array")) + Member.ArrayDim;
 				}
 				FString Value;
 				FString SkipReason;
@@ -937,7 +937,7 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 				}
 				else if (!SkipReason.IsEmpty())
 				{
-					Line += FString(TEXT("  (기본값 ")) + Member.DefaultExpr + TEXT(" 미적용)");
+					Line += FString(TEXT("  (default ")) + Member.DefaultExpr + TEXT(" not applied)");
 				}
 				for (const FString& Warning : Resolved.Warnings)
 				{
@@ -948,11 +948,11 @@ FString FTypePasteBlueprintBuilder::BuildPreview(const FTPParseResult& Parsed, c
 		}
 		if (Def.NumRawItems() > 0)
 		{
-			Text += FString(TEXT("   (함수/생성자 등 ")) + FString::FromInt(Def.NumRawItems()) + TEXT("개는 블루프린트에 반영되지 않음)\n");
+			Text += FString(TEXT("   (")) + FString::FromInt(Def.NumRawItems()) + TEXT(" function(s)/constructor(s) etc. are not reflected in Blueprints)\n");
 		}
 		if (!Def.ParentName.IsEmpty())
 		{
-			Text += FString(TEXT("   (부모 ")) + Def.ParentName + TEXT(" 는 블루프린트 구조체에서 무시됨)\n");
+			Text += FString(TEXT("   (parent ")) + Def.ParentName + TEXT(" is ignored in Blueprint structs)\n");
 		}
 	}
 
@@ -967,7 +967,7 @@ FTPBlueprintResult FTypePasteBlueprintBuilder::Build(const FTPParseResult& Parse
 	const FString PackagePath = NormalizePackagePath(Options.PackagePath);
 	if (PackagePath.Len() < 2)
 	{
-		Result.Messages.Add(FTPMessage(ETPSeverity::Error, TEXT("저장 경로가 비어 있습니다. 예) /Game/Types")));
+		Result.Messages.Add(FTPMessage(ETPSeverity::Error, TEXT("The save path is empty. e.g. /Game/Types")));
 		return Result;
 	}
 
@@ -975,7 +975,7 @@ FTPBlueprintResult FTypePasteBlueprintBuilder::Build(const FTPParseResult& Parse
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools")).Get();
 	TArray<UPackage*> PackagesToSave;
 
-	// 1) 열거형 먼저 (구조체 멤버가 참조할 수 있으므로)
+	// 1) Enums first (struct members may reference them)
 	for (const FTPEnumDef& Def : Parsed.Enums)
 	{
 		const FString AssetName = MakeAssetName(Def.Name, true, Options.Naming);
@@ -996,16 +996,16 @@ FTPBlueprintResult FTypePasteBlueprintBuilder::Build(const FTPParseResult& Parse
 		PackagesToSave.AddUnique(Enum->GetPackage());
 		Result.CreatedAssets.Add(Enum);
 		++Result.NumCreatedEnums;
-		UE_LOG(LogTypePaste, Log, TEXT("열거형 생성: %s"), *Enum->GetPathName());
+		UE_LOG(LogTypePaste, Log, TEXT("Created enum: %s"), *Enum->GetPathName());
 	}
 
-	// 2) 구조체: 다른 구조체를 값으로 포함하는 것이 나중에 오도록 정렬
+	// 2) Structs: sorted so that a struct containing another by value comes later
 	TArray<int32> Order;
 	TArray<FString> Cycles;
 	SortStructsByDependency(Parsed, Order, Cycles);
 	if (Cycles.Num() > 0)
 	{
-		Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("구조체가 서로(또는 자기 자신을) 값으로 포함하고 있어 일부 멤버를 만들 수 없습니다: "))
+		Result.Messages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("Structs contain each other (or themselves) by value, so some members cannot be created: "))
 			+ FString::Join(Cycles, TEXT(", "))));
 	}
 
@@ -1030,15 +1030,15 @@ FTPBlueprintResult FTypePasteBlueprintBuilder::Build(const FTPParseResult& Parse
 		PackagesToSave.AddUnique(Struct->GetPackage());
 		Result.CreatedAssets.Add(Struct);
 		++Result.NumCreatedStructs;
-		UE_LOG(LogTypePaste, Log, TEXT("구조체 생성: %s"), *Struct->GetPathName());
+		UE_LOG(LogTypePaste, Log, TEXT("Created struct: %s"), *Struct->GetPathName());
 	}
 
-	// 3) 저장
+	// 3) Save
 	if (Options.bSaveAssets && PackagesToSave.Num() > 0)
 	{
 		if (!UEditorLoadingAndSavingUtils::SavePackages(PackagesToSave, true))
 		{
-			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, TEXT("일부 에셋을 저장하지 못했습니다. 콘텐츠 브라우저에서 직접 저장해 주세요.")));
+			Result.Messages.Add(FTPMessage(ETPSeverity::Warning, TEXT("Some assets could not be saved. Save them in the Content Browser.")));
 		}
 	}
 

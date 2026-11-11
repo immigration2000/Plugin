@@ -99,10 +99,12 @@ echo.
 goto build
 
 :check_running
-"%SYS32%\tasklist.exe" /FI "IMAGENAME eq UnrealEditor.exe" /NH 2>nul | "%SYS32%\find.exe" /i "UnrealEditor.exe" >nul
-if errorlevel 1 goto build
-echo [warning] UnrealEditor.exe is running. Building while the editor has this project open
-echo           fails (Live Coding / locked DLLs). Close the editor first.
+rem Only an editor that has THIS project open matters (other projects/engine versions are fine)
+set "RUNNING=0"
+for /f "usebackq delims=" %%N in (`powershell -NoProfile -Command "@(Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'UnrealEditor.exe' -and $_.CommandLine -like ('*' + $env:PROJECT_NAME + '.uproject*') }).Count"`) do set "RUNNING=%%N"
+if "%RUNNING%"=="0" goto build
+echo [warning] The editor has %PROJECT_NAME% open. Building now fails (Live Coding / locked DLLs).
+echo           Close the editor first.
 "%SYS32%\choice.exe" /C YN /M "Build anyway"
 if errorlevel 2 goto fail
 

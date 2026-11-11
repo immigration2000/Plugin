@@ -1,4 +1,4 @@
-﻿// TypePaste - 에디터 탭 UI 구현
+﻿// TypePaste - editor tab UI implementation
 
 #include "STypePastePanel.h"
 #include "TypePasteBlueprintBuilder.h"
@@ -52,9 +52,9 @@ namespace TypePastePanelPrivate
 		};
 		static const FGroup Groups[] =
 		{
-			{ ETPSeverity::Error, TEXT("[오류] ") },
-			{ ETPSeverity::Warning, TEXT("[경고] ") },
-			{ ETPSeverity::Info, TEXT("[정보] ") },
+			{ ETPSeverity::Error, TEXT("[Error] ") },
+			{ ETPSeverity::Warning, TEXT("[Warning] ") },
+			{ ETPSeverity::Info, TEXT("[Info] ") },
 		};
 
 		FString Out;
@@ -98,10 +98,10 @@ namespace TypePastePanelPrivate
 
 void STypePastePanel::Construct(const FArguments& InArgs)
 {
-	NamingOptions.Add(MakeShared<FString>(TEXT("C++ 이름 그대로  (EWeaponType / FWeaponData)")));
-	NamingOptions.Add(MakeShared<FString>(TEXT("E_ / S_ 접두사  (E_WeaponType / S_WeaponData)")));
-	NamingOptions.Add(MakeShared<FString>(TEXT("E_ / F_ 접두사  (E_WeaponType / F_WeaponData)")));
-	NamingOptions.Add(MakeShared<FString>(TEXT("접두사 없음  (WeaponType / WeaponData)")));
+	NamingOptions.Add(MakeShared<FString>(TEXT("Keep C++ name  (EWeaponType / FWeaponData)")));
+	NamingOptions.Add(MakeShared<FString>(TEXT("E_ / S_ prefix  (E_WeaponType / S_WeaponData)")));
+	NamingOptions.Add(MakeShared<FString>(TEXT("E_ / F_ prefix  (E_WeaponType / F_WeaponData)")));
+	NamingOptions.Add(MakeShared<FString>(TEXT("No prefix  (WeaponType / WeaponData)")));
 	SelectedNaming = NamingOptions[0];
 
 	for (const FString& ModuleName : FTypePasteCppExporter::GetProjectModuleNames())
@@ -144,7 +144,7 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 				.Padding(0.f, 0.f, 0.f, 4.f)
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("InputLabel", "AI 답변 붙여넣기"))
+					.Text(LOCTEXT("InputLabel", "Paste AI answer"))
 				]
 				+ SVerticalBox::Slot()
 				.FillHeight(1.f)
@@ -152,7 +152,7 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 					SAssignNew(InputBox, SMultiLineEditableTextBox)
 					.Font(MonoFont)
 					.AutoWrapText(false)
-					.HintText(LOCTEXT("InputHint", "여기에 AI 가 추천한 UENUM / USTRUCT 코드를 붙여넣으세요. (설명이 섞인 답변 전체도 괜찮습니다)"))
+					.HintText(LOCTEXT("InputHint", "Paste the UENUM / USTRUCT code suggested by the AI here. (A whole answer with prose mixed in is fine too)"))
 					.OnTextChanged(this, &STypePastePanel::OnInputChanged)
 				]
 				+ SVerticalBox::Slot()
@@ -174,7 +174,7 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 				.Padding(0.f, 0.f, 0.f, 4.f)
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("PreviewLabel", "미리보기 / 결과"))
+					.Text(LOCTEXT("PreviewLabel", "Preview / Result"))
 				]
 				+ SVerticalBox::Slot()
 				.FillHeight(1.f)
@@ -229,11 +229,11 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 				SNew(SButton)
 				.ContentPadding(FMargin(12.f, 4.f))
 				.Visibility_Lambda([this]() { return Mode == ETPTargetMode::Cpp ? EVisibility::Visible : EVisibility::Collapsed; })
-				.ToolTipText(LOCTEXT("BuildAndReopenTip", "에디터를 닫고 프로젝트를 빌드한 뒤(솔루션 파일 필요 없음) 다시 엽니다. 저장하지 않은 에셋이 있으면 먼저 저장 여부를 묻습니다."))
+				.ToolTipText(LOCTEXT("BuildAndReopenTip", "Closes the editor, builds the project (no solution file needed) and opens it again. If there are unsaved assets, you are asked to save them first."))
 				.OnClicked(this, &STypePastePanel::OnBuildAndReopenClicked)
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("BuildAndReopen", "빌드 후 다시 열기"))
+					.Text(LOCTEXT("BuildAndReopen", "Build and Reopen"))
 				]
 			]
 			+ SHorizontalBox::Slot()
@@ -255,7 +255,7 @@ void STypePastePanel::Construct(const FArguments& InArgs)
 }
 
 // ---------------------------------------------------------------------------
-// UI 구성
+// UI construction
 // ---------------------------------------------------------------------------
 
 TSharedRef<SWidget> STypePastePanel::MakeRow(const FText& InLabel, const TSharedRef<SWidget>& InContent)
@@ -290,8 +290,8 @@ TSharedRef<SWidget> STypePastePanel::BuildToolbar()
 		.Padding(0.f, 0.f, 4.f, 0.f)
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("CopyPrompt", "AI 요청 프롬프트 복사"))
-			.ToolTipText(LOCTEXT("CopyPromptTip", "TypePaste 가 잘 읽는 형식으로 답하도록 AI 에게 줄 요청문을 클립보드에 복사합니다."))
+			.Text(LOCTEXT("CopyPrompt", "Copy AI Prompt"))
+			.ToolTipText(LOCTEXT("CopyPromptTip", "Copies a request to the clipboard that makes the AI answer in a format TypePaste reads well (English only)."))
 			.OnClicked(this, &STypePastePanel::OnCopyPromptClicked)
 		]
 		+ SHorizontalBox::Slot()
@@ -299,14 +299,14 @@ TSharedRef<SWidget> STypePastePanel::BuildToolbar()
 		.Padding(0.f, 0.f, 4.f, 0.f)
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("PasteClipboard", "클립보드에서 붙여넣기"))
+			.Text(LOCTEXT("PasteClipboard", "Paste from Clipboard"))
 			.OnClicked(this, &STypePastePanel::OnPasteClicked)
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("Clear", "지우기"))
+			.Text(LOCTEXT("Clear", "Clear"))
 			.OnClicked(this, &STypePastePanel::OnClearClicked)
 		];
 }
@@ -337,20 +337,20 @@ TSharedRef<SWidget> STypePastePanel::BuildTargetOptions()
 			];
 	};
 
-	return MakeRow(LOCTEXT("TargetLabel", "생성 대상"),
+	return MakeRow(LOCTEXT("TargetLabel", "Generate"),
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		.Padding(0.f, 0.f, 16.f, 0.f)
 		[
-			MakeRadio(ETPTargetMode::Blueprint, LOCTEXT("ModeBlueprint", "블루프린트 에셋"),
-				LOCTEXT("ModeBlueprintTip", "콘텐츠 브라우저에 열거형(UserDefinedEnum) / 구조체(UserDefinedStruct) 에셋을 만듭니다."))
+			MakeRadio(ETPTargetMode::Blueprint, LOCTEXT("ModeBlueprint", "Blueprint assets"),
+				LOCTEXT("ModeBlueprintTip", "Creates enum (UserDefinedEnum) / struct (UserDefinedStruct) assets in the Content Browser."))
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
-			MakeRadio(ETPTargetMode::Cpp, LOCTEXT("ModeCpp", "C++ 헤더"),
-				LOCTEXT("ModeCppTip", "프로젝트 모듈 소스 폴더에 UENUM / USTRUCT 헤더 파일을 만듭니다."))
+			MakeRadio(ETPTargetMode::Cpp, LOCTEXT("ModeCpp", "C++ headers"),
+				LOCTEXT("ModeCppTip", "Creates UENUM / USTRUCT header files in a project module's source folder."))
 		]);
 }
 
@@ -365,7 +365,7 @@ TSharedRef<SWidget> STypePastePanel::BuildBlueprintOptions()
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
-			MakeRow(LOCTEXT("PathLabel", "저장 경로"),
+			MakeRow(LOCTEXT("PathLabel", "Save path"),
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.f)
@@ -387,7 +387,7 @@ TSharedRef<SWidget> STypePastePanel::BuildBlueprintOptions()
 					.ButtonContent()
 					[
 						SNew(STextBlock)
-						.Text(LOCTEXT("BrowseFolder", "폴더 선택"))
+						.Text(LOCTEXT("BrowseFolder", "Browse"))
 					]
 				])
 		]
@@ -395,7 +395,7 @@ TSharedRef<SWidget> STypePastePanel::BuildBlueprintOptions()
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
-			MakeRow(LOCTEXT("NamingLabel", "에셋 이름 규칙"),
+			MakeRow(LOCTEXT("NamingLabel", "Asset naming"),
 				SNew(STextComboBox)
 				.OptionsSource(&NamingOptions)
 				.InitiallySelectedItem(SelectedNaming)
@@ -418,7 +418,7 @@ TSharedRef<SWidget> STypePastePanel::BuildBlueprintOptions()
 				.OnCheckStateChanged_Lambda([this](ECheckBoxState NewState) { bSaveAssets = NewState == ECheckBoxState::Checked; })
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("SaveAssets", "생성 후 바로 저장"))
+					.Text(LOCTEXT("SaveAssets", "Save after creating"))
 				])
 		];
 }
@@ -438,7 +438,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 		[
 			SNew(STextBlock)
 			.AutoWrapText(true)
-			.Text(LOCTEXT("NoModules", "이 프로젝트에는 C++ 모듈이 없습니다. (Tools > New C++ Class 로 클래스를 하나 추가하면 C++ 프로젝트가 됩니다)"))
+			.Text(LOCTEXT("NoModules", "This project has no C++ module. (Add a class with Tools > New C++ Class to make it a C++ project)"))
 		];
 		return Box;
 	}
@@ -446,7 +446,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 	Box->AddSlot()
 	.AutoHeight()
 	[
-		MakeRow(LOCTEXT("ModuleLabel", "모듈"),
+		MakeRow(LOCTEXT("ModuleLabel", "Module"),
 			SNew(STextComboBox)
 			.OptionsSource(&ModuleOptions)
 			.InitiallySelectedItem(SelectedModule)
@@ -463,10 +463,10 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 	Box->AddSlot()
 	.AutoHeight()
 	[
-		MakeRow(LOCTEXT("SubFolderLabel", "하위 폴더"),
+		MakeRow(LOCTEXT("SubFolderLabel", "Subfolder"),
 			SNew(SEditableTextBox)
 			.Text_Lambda([this]() { return FText::FromString(SubFolder); })
-			.HintText(LOCTEXT("SubFolderHint", "비우면 Public 폴더 바로 아래"))
+			.HintText(LOCTEXT("SubFolderHint", "Empty = directly under the Public folder"))
 			.OnTextChanged_Lambda([this](const FText& NewText)
 			{
 				SubFolder = NewText.ToString();
@@ -477,7 +477,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 	Box->AddSlot()
 	.AutoHeight()
 	[
-		MakeRow(LOCTEXT("FileLabel", "파일"),
+		MakeRow(LOCTEXT("FileLabel", "File"),
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
@@ -493,7 +493,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 				})
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("SingleFile", "한 파일로 묶기"))
+					.Text(LOCTEXT("SingleFile", "Single file"))
 				]
 			]
 			+ SHorizontalBox::Slot()
@@ -504,7 +504,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 				.Text_Lambda([this]() { return FText::FromString(FileBaseName); })
 				.HintText_Lambda([this]()
 				{
-					return FText::Format(LOCTEXT("FileNameHint", "파일 이름 (비우면 {0}.h)"), FText::FromString(FTypePasteCppWriter::SuggestFileBaseName(LastParse)));
+					return FText::Format(LOCTEXT("FileNameHint", "File name (empty = {0}.h)"), FText::FromString(FTypePasteCppWriter::SuggestFileBaseName(LastParse)));
 				})
 				.OnTextChanged_Lambda([this](const FText& NewText)
 				{
@@ -528,7 +528,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 				.OnCheckStateChanged_Lambda([this](ECheckBoxState NewState) { bOverwrite = NewState == ECheckBoxState::Checked; })
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("Overwrite", "기존 파일 덮어쓰기"))
+					.Text(LOCTEXT("Overwrite", "Overwrite existing files"))
 				]
 			]
 			+ SHorizontalBox::Slot()
@@ -539,7 +539,7 @@ TSharedRef<SWidget> STypePastePanel::BuildCppOptions()
 				.OnCheckStateChanged_Lambda([this](ECheckBoxState NewState) { bOpenInIDE = NewState == ECheckBoxState::Checked; })
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("OpenInIDE", "생성 후 IDE 에서 열기"))
+					.Text(LOCTEXT("OpenInIDE", "Open in IDE after creating"))
 				]
 			])
 	];
@@ -571,7 +571,7 @@ void STypePastePanel::OnPathPicked(const FString& Path)
 }
 
 // ---------------------------------------------------------------------------
-// 입력 / 미리보기
+// Input / preview
 // ---------------------------------------------------------------------------
 
 void STypePastePanel::OnInputChanged(const FText& NewText)
@@ -615,7 +615,7 @@ void STypePastePanel::RefreshPreview()
 			{
 				const FTPCppExportOptions Options = MakeCppOptions();
 				const FString Dir = FTypePasteCppExporter::GetTargetDirectory(Options);
-				Detail = FString(TEXT("C++ 헤더 미리보기  —  저장 폴더: ")) + (Dir.IsEmpty() ? FString(TEXT("(모듈을 찾지 못함)")) : Dir) + TEXT("\n");
+				Detail = FString(TEXT("C++ header preview  -  folder: ")) + (Dir.IsEmpty() ? FString(TEXT("(module not found)")) : Dir) + TEXT("\n");
 				for (const FTPCppFile& File : FTypePasteCppExporter::GenerateFiles(LastParse, Options, Messages))
 				{
 					Detail += FString(TEXT("\n===== ")) + File.FileName + TEXT(" =====\n") + File.Content;
@@ -633,13 +633,13 @@ void STypePastePanel::RefreshPreview()
 }
 
 // ---------------------------------------------------------------------------
-// 버튼
+// Buttons
 // ---------------------------------------------------------------------------
 
 FReply STypePastePanel::OnCopyPromptClicked()
 {
 	FPlatformApplicationMisc::ClipboardCopy(TypePastePrompt::GetRequestPrompt());
-	TypePastePanelPrivate::Notify(LOCTEXT("PromptCopied", "AI 요청 프롬프트를 클립보드에 복사했습니다. [설계할 기능] 부분을 채워서 AI 에게 보내세요."), true);
+	TypePastePanelPrivate::Notify(LOCTEXT("PromptCopied", "Copied the AI prompt to the clipboard. Fill in [Feature to design] and send it to the AI."), true);
 	return FReply::Handled();
 }
 
@@ -672,7 +672,7 @@ FReply STypePastePanel::OnGenerateClicked()
 	Reparse();
 	if (!LastParse.HasAnyType() || LastParse.HasErrors())
 	{
-		Notify(LOCTEXT("CannotGenerate", "생성할 수 없습니다. 미리보기의 [오류] 를 먼저 확인해 주세요."), false);
+		Notify(LOCTEXT("CannotGenerate", "Cannot generate. Check the [Error] lines in the preview first."), false);
 		RefreshPreview();
 		return FReply::Handled();
 	}
@@ -683,7 +683,7 @@ FReply STypePastePanel::OnGenerateClicked()
 	{
 		const FTPBlueprintResult Result = FTypePasteBlueprintBuilder::Build(LastParse, MakeBlueprintOptions());
 		const bool bAnyCreated = Result.CreatedAssets.Num() > 0;
-		const FString Headline = FString::Printf(TEXT("블루프린트 에셋 생성: 열거형 %d개, 구조체 %d개 (기존 에셋 재사용 %d개)"),
+		const FString Headline = FString::Printf(TEXT("Created Blueprint assets: %d enum(s), %d struct(s) (%d existing asset(s) reused)"),
 			Result.NumCreatedEnums, Result.NumCreatedStructs, Result.NumReused);
 		ShowResult(Result.Messages, Headline, bAnyCreated);
 
@@ -698,8 +698,8 @@ FReply STypePastePanel::OnGenerateClicked()
 		const FTPCppExportResult Result = FTypePasteCppExporter::Export(LastParse, MakeCppOptions());
 		const bool bAnyWritten = Result.WrittenFiles.Num() > 0;
 		FString Headline = bAnyWritten
-			? FString::Printf(TEXT("C++ 헤더 %d개 생성"), Result.WrittenFiles.Num())
-			: FString(TEXT("C++ 헤더를 만들지 못했습니다"));
+			? FString::Printf(TEXT("Created %d C++ header(s)"), Result.WrittenFiles.Num())
+			: FString(TEXT("Could not create the C++ headers"));
 		for (const FString& Path : Result.WrittenFiles)
 		{
 			Headline += TEXT("\n   ");
@@ -710,7 +710,7 @@ FReply STypePastePanel::OnGenerateClicked()
 		if (bAnyWritten)
 		{
 			const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::YesNo,
-				LOCTEXT("AskBuildAndReopen", "C++ 헤더를 만들었습니다. 새 타입은 빌드해야 반영됩니다.\n\n지금 에디터를 닫고 빌드한 뒤 프로젝트를 다시 열까요?\n(나중에 [빌드 후 다시 열기] 버튼이나 프로젝트 루트의 Build.bat 으로도 할 수 있습니다)"));
+				LOCTEXT("AskBuildAndReopen", "The C++ headers were created. New types only appear after a build.\n\nClose the editor, build, and reopen the project now?\n(You can also do this later with [Build and Reopen] or the Build.bat in the project root)"));
 			if (Answer == EAppReturnType::Yes)
 			{
 				StartBuildAndReopen();
@@ -723,7 +723,7 @@ FReply STypePastePanel::OnGenerateClicked()
 FReply STypePastePanel::OnBuildAndReopenClicked()
 {
 	const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::OkCancel,
-		LOCTEXT("ConfirmBuildAndReopen", "에디터를 닫고 프로젝트를 빌드한 뒤 다시 엽니다.\n빌드 진행 상황은 새 콘솔 창에 표시됩니다."));
+		LOCTEXT("ConfirmBuildAndReopen", "The editor will close, the project will be built, and then it will be opened again.\nBuild progress is shown in a new console window."));
 	if (Answer == EAppReturnType::Ok)
 	{
 		StartBuildAndReopen();
@@ -737,19 +737,19 @@ void STypePastePanel::StartBuildAndReopen()
 	TArray<FTPMessage> Messages;
 	if (!FTypePasteBuildLauncher::LaunchBuildAndReopen(Messages))
 	{
-		ShowResult(Messages, TEXT("빌드 스크립트를 실행하지 못했습니다"), false);
+		ShowResult(Messages, TEXT("Could not run the build script"), false);
 	}
 }
 
 // ---------------------------------------------------------------------------
-// 상태 표시
+// Status display
 // ---------------------------------------------------------------------------
 
 FText STypePastePanel::GetSummaryText() const
 {
 	if (InputText.TrimStartAndEnd().IsEmpty())
 	{
-		return LOCTEXT("SummaryEmpty", "붙여넣기를 기다리는 중...");
+		return LOCTEXT("SummaryEmpty", "Waiting for input...");
 	}
 	int32 NumErrors = 0;
 	int32 NumWarnings = 0;
@@ -758,7 +758,7 @@ FText STypePastePanel::GetSummaryText() const
 		NumErrors += Message.Severity == ETPSeverity::Error ? 1 : 0;
 		NumWarnings += Message.Severity == ETPSeverity::Warning ? 1 : 0;
 	}
-	return FText::Format(LOCTEXT("SummaryFormat", "열거형 {0}개 · 구조체 {1}개  |  오류 {2} · 경고 {3}"),
+	return FText::Format(LOCTEXT("SummaryFormat", "{0} enum(s), {1} struct(s)  |  {2} error(s), {3} warning(s)"),
 		LastParse.Enums.Num(), LastParse.Structs.Num(), NumErrors, NumWarnings);
 }
 
@@ -787,13 +787,13 @@ bool STypePastePanel::IsGenerateEnabled() const
 FText STypePastePanel::GetGenerateButtonText() const
 {
 	return Mode == ETPTargetMode::Blueprint
-		? LOCTEXT("GenerateBlueprint", "블루프린트 에셋 생성")
-		: LOCTEXT("GenerateCpp", "C++ 헤더 생성");
+		? LOCTEXT("GenerateBlueprint", "Create Blueprint Assets")
+		: LOCTEXT("GenerateCpp", "Create C++ Headers");
 }
 
 void STypePastePanel::ShowResult(const TArray<FTPMessage>& Messages, const FString& Headline, bool bSuccess)
 {
-	LastResultText = FString(TEXT("■ ")) + Headline + TEXT("\n") + TypePastePanelPrivate::FormatMessages(Messages);
+	LastResultText = FString(TEXT("* ")) + Headline + TEXT("\n") + TypePastePanelPrivate::FormatMessages(Messages);
 	if (Messages.Num() == 0)
 	{
 		LastResultText += TEXT("\n");
@@ -809,7 +809,7 @@ void STypePastePanel::ShowResult(const TArray<FTPMessage>& Messages, const FStri
 }
 
 // ---------------------------------------------------------------------------
-// 옵션
+// Options
 // ---------------------------------------------------------------------------
 
 FTPBlueprintOptions STypePastePanel::MakeBlueprintOptions() const

@@ -1,4 +1,4 @@
-﻿// TypePaste - 모듈 시작/종료 및 탭 등록
+﻿// TypePaste - module startup/shutdown and tab registration
 
 #include "TypePasteModule.h"
 #include "STypePastePanel.h"
@@ -18,10 +18,10 @@ const FName FTypePasteModule::TabName(TEXT("TypePaste"));
 
 void FTypePasteModule::StartupModule()
 {
-	// Tools 메뉴 > TypePaste 로 열 수 있는 탭
+	// Tab opened from the Tools menu > TypePaste
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TabName, FOnSpawnTab::CreateRaw(this, &FTypePasteModule::SpawnTab))
-		.SetDisplayName(LOCTEXT("TabTitle", "TypePaste (타입 붙여넣기)"))
-		.SetTooltipText(LOCTEXT("TabTooltip", "AI 가 추천한 열거형/구조체 코드를 붙여넣어 블루프린트 에셋이나 C++ 헤더로 만듭니다."))
+		.SetDisplayName(LOCTEXT("TabTitle", "TypePaste"))
+		.SetTooltipText(LOCTEXT("TabTooltip", "Paste AI-suggested enum/struct code to create Blueprint assets or C++ headers."))
 		.SetGroup(WorkspaceMenu::GetMenuStructure().GetToolsCategory())
 		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.UserDefinedStruct"));
 }

@@ -89,8 +89,10 @@ UPDATE=1 ./run_tests.sh        # 출력이 '의도대로' 바뀐 경우에만 �
   `StartsWith/EndsWith/Find/Contains/Replace` 기본값도 IgnoreCase 라는 점 주의.
 - UE 는 섀도잉 경고를 오류로 처리한다. 지역 변수·람다 매개변수 이름을 바깥 변수나 SWidget 멤버(`ToolTip`, `Cursor`, `Tag` 등)와 겹치지 않게.
 - 유니티 빌드 대비: 파일별 private 네임스페이스(`TypePaste<파일>Private`) 유지, `LOCTEXT_NAMESPACE` 는 파일 끝에서 `#undef`.
-- 소스 파일은 **UTF-8 BOM** 유지 (한글 문자열 리터럴이 MSVC 에서 깨지지 않도록). 새 파일도 BOM 으로 만든다.
-- UE 코딩 표준, 탭 들여쓰기. 사용자에게 보이는 문구와 주석은 한국어.
+- **플러그인 소스의 UI 문구·메시지·주석·스크립트도 영어(ASCII)만** (D20). 테스트 데이터로 한글이 필요하면 `L"\uAC80"` 처럼 이스케이프로 쓴다.
+  (`.md` 문서는 한국어 유지. 사용자와의 대화도 한국어)
+- 소스 파일은 UTF-8 BOM 유지 (기존 파일과 통일). 새 파일도 BOM 으로 만든다.
+- UE 코딩 표준, 탭 들여쓰기.
 - 기존 에셋/파일을 조용히 덮어쓰지 않는다 (DECISIONS D6, D12).
 
 ## 마무리할 때
