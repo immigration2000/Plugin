@@ -89,11 +89,18 @@ bool FTypePasteBuildLauncher::LaunchBuildAndReopen(TArray<FTPMessage>& OutMessag
 	FString ProjectPath = ProjectFile;
 	FPaths::MakePlatformFilename(ProjectPath);
 
-	// cmd /c start "title" "Build.bat" ... : start opens a new console window, so the build window stays after the editor exits
-	const FString Params = FString::Printf(TEXT("/c start \"TypePaste Build\" %s -project %s -engine %s -waitpid %u"),
+	// start opens a new console window, so the build window stays after the editor exits.
+	// Do NOT pass the .bat to start directly: start runs it as `cmd /K "Build.bat" ... "last"` and cmd strips the first
+	// and last quote of that line, which breaks the script path ("The filename, directory name, or volume label syntax
+	// is incorrect"). Run an explicit `cmd /c ""Build.bat" args"` instead: the outer quote pair is what cmd strips.
+	const FString ScriptCommand = FString::Printf(TEXT("%s -project %s -engine %s -waitpid %u"),
 		*Quote(ScriptPath), *Quote(ProjectPath), *Quote(EngineRoot), FPlatformProcess::GetCurrentProcessId());
+	const FString Params = FString::Printf(TEXT("/c start \"TypePaste Build\" cmd.exe /c %s"), *Quote(ScriptCommand));
 
-	FProcHandle Handle = FPlatformProcess::CreateProc(TEXT("cmd.exe"), *Params, true, false, false, nullptr, 0, nullptr, nullptr);
+	FString WorkingDir = FPaths::GetPath(ProjectFile);
+	FPaths::MakePlatformFilename(WorkingDir);
+
+	FProcHandle Handle = FPlatformProcess::CreateProc(TEXT("cmd.exe"), *Params, true, false, false, nullptr, 0, *WorkingDir, nullptr);
 	if (!Handle.IsValid())
 	{
 		OutMessages.Add(FTPMessage(ETPSeverity::Error, FString(TEXT("Could not run the build script: ")) + ScriptPath));

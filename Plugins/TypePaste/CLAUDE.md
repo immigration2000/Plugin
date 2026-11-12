@@ -82,6 +82,7 @@ UPDATE=1 ./run_tests.sh        # 출력이 '의도대로' 바뀐 경우에만 �
 - 생성기는 주석과 `ToolTip` 지정자를 동시에 내보내지 않는다 (UHT ToolTip 중복 오류, D17).
 - `Scripts/*.bat` 은 ASCII 만, CRLF. Git Bash 의 `sed -i` 는 CR 을 지우므로 bat 수정 후 줄바꿈을 확인할 것.
   Windows 도구는 `%SYS32%\find.exe` 처럼 전체 경로로 (PATH 에 Git 의 find 가 먼저 있을 수 있음). `for /f ('...')` 안은 따옴표로 시작하지 않게.
+  `.bat` 을 `start` 로 띄울 때는 `start "제목" cmd.exe /c ""<bat>" 인자..."` 형태로 (`start "제목" "<bat>" "인자"` 는 cmd 가 앞뒤 따옴표를 지워 경로가 깨진다).
 
 - **순수 로직 3개 파일**(Types/Parser/CppWriter)에는 `CoreMinimal.h` 외 엔진 헤더를 넣지 않는다. 그래야 mock 테스트가 유지된다.
   mock 에 없는 FString/TArray API 를 쓰면 `Tests/mock/CoreMinimal.h` 에 **UE 와 같은 시그니처·의미**로 추가한다.

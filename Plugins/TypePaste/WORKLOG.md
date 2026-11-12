@@ -92,3 +92,26 @@ C++ 생성 후 에디터 닫고 배치 파일로 빌드하고 바로 프로젝�
 - **확인 못 함**: 에디터 안에서 바뀐 UI 표시, 빌드 후 다시 열기 전체 흐름
 
 **다음**: TASKS.md P0 수동 검증
+
+## 2026-11-12 — Claude Code (Opus 5.5) — 빌드 후 다시 열기 실행 오류 수정
+
+**증상** (사용자 영상 2026-11-11 16:07): 블루프린트 생성(열거형 2, 구조체 2)과 영어만 경고는 정상. C++ 헤더 생성 후
+"Build and Reopen" 으로 에디터가 닫히자 "TypePaste Build" 콘솔 창에 `파일 이름, 디렉터리 이름 또는 볼륨 레이블 구문이 잘못되었습니다.`
+가 나오고 `...\Engine\Binaries\Win64>` 프롬프트에서 멈춤 → 빌드도, 다시 열기도 안 됨.
+
+**원인**: `cmd /c start "TypePaste Build" "<Build.bat>" -project "..." ...` 에서 `start` 가 .bat 을 `cmd /K <줄>` 로 실행하는데,
+그 줄이 따옴표로 시작하고 따옴표가 2개보다 많으면 cmd 가 맨 앞·맨 뒤 따옴표를 지움 → 스크립트 경로에 따옴표 하나만 남아 깨짐.
+같은 명령을 더미 bat 으로 재현해 확인.
+
+**한 일**
+- `TypePasteBuildLauncher.cpp`: `cmd /c start "TypePaste Build" cmd.exe /c ""<Build.bat>" -project "..." -engine "..." -waitpid N"` 로 변경
+  (바깥 따옴표 한 쌍을 cmd 가 지우도록). 작업 폴더를 프로젝트 폴더로 지정
+- DECISIONS D18, CLAUDE.md 코딩 규칙(bat 을 start 로 띄우는 방법), TASKS P0 갱신
+
+**테스트**
+- 더미 bat: 옛 명령은 실패(로그 없음, /K 창 남음), 새 명령은 인자 7개가 정확히 전달됨
+- 실제 `Scripts/Build.bat` 을 새 명령 형태(+ `-noopen`, 더미 PID)로 실행 → PID 종료 대기 → `PluginEditor` 빌드 성공(64초, 바뀐 런처 파일 포함)
+  → 성공 시 창 자동 닫힘 확인
+- **확인 못 함**: 에디터 안에서 버튼 → 에디터 종료 → 빌드 → 프로젝트 다시 열기 전체 흐름
+
+**다음**: 사용자가 에디터에서 "Build and Reopen" 다시 확인 (TASKS P0)
